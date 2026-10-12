@@ -152,34 +152,9 @@ def construir_html_dashboard(repo_name, org_owner, fecha_actual, commit_actual, 
         </div>
     </div>
 
+    <!-- 1. PRIMERO: Visor de Cambios en Código -->
     <div class="section-box">
-        <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
-        <div class="ai-summary-box">
-            <p>{descripcion_cambios}</p>
-            <div><b>Título de Commit Estándar Sugerido:</b></div>
-            <div class="conventional-tag">{commit_sugerido}</div>
-        </div>
-    </div>
-
-    <div class="section-box">
-        <h2>📜 Changelog Reciente</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Hash</th>
-                    <th>Mensaje</th>
-                    <th>Autor</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody>
-                {changelog_html}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="section-box">
-        <h2>💻 Visor de Cambios</h2>
+        <h2>💻 Visor de Cambios en Código</h2>
         
         <div class="vscode-window">
             <div class="vscode-titlebar">
@@ -210,6 +185,34 @@ def construir_html_dashboard(repo_name, org_owner, fecha_actual, commit_actual, 
         </div>
     </div>
 
+    <!-- 2. SEGUNDO: Resumen y desglose de cambios -->
+    <div class="section-box">
+        <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
+        <div class="ai-summary-box">
+            <p>{descripcion_cambios}</p>
+            <div><b>Título de Commit Estándar Sugerido:</b></div>
+            <div class="conventional-tag">{commit_sugerido}</div>
+        </div>
+    </div>
+
+    <!-- 3. TERCERO: Changelog e historial de commits -->
+    <div class="section-box">
+        <h2>📜 Changelog Reciente (Historial)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Hash</th>
+                    <th>Mensaje</th>
+                    <th>Autor</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                {changelog_html}
+            </tbody>
+        </table>
+    </div>
+
     <footer>
         <p>Pipeline automatizado con Python y GitHub Actions.</p>
     </footer>
@@ -232,3 +235,4 @@ def construir_html_dashboard(repo_name, org_owner, fecha_actual, commit_actual, 
         archivo_principal=archivo_principal,
         editor_lineas=editor_lineas
     )
+    
