@@ -1,7 +1,7 @@
-os = __import__('os')
-json = __import__('json')
-subprocess = __import__('subprocess')
-html_mod = __import__('html')
+import os
+import json
+import subprocess
+import html as html_mod
 from datetime import datetime
 
 def cargar_datos_evento():
@@ -61,10 +61,8 @@ def obtener_archivos_y_diff():
         return [], "cambios.diff", f"Error: {str(e)}"
 
 def colorear_sintaxis_codely(linea):
-    """Aplica resaltado de sintaxis inspirado en el tema CodelyTV (palabras clave, strings, comentarios)"""
     linea_escaped = html_mod.escape(linea)
     
-    # Si es una línea de diff añadida o eliminada
     prefijo = ""
     if linea_escaped.startswith('+'):
         prefijo = "+"
@@ -73,26 +71,17 @@ def colorear_sintaxis_codely(linea):
         prefijo = "-"
         linea_escaped = linea_escaped[1:]
 
-    # Resaltado básico de comentarios (# o """)
     if linea_escaped.strip().startswith('#') or linea_escaped.strip().startswith('"""'):
         linea_formateada = f'<span class="tok-comment">{linea_escaped}</span>'
     else:
-        # Resaltado de palabras clave de programación comunes
         palabras_clave = ['def ', 'import ', 'return ', 'class ', 'try:', 'except', 'for ', 'in ', 'if ', 'with ', 'as ']
         reemplazado = linea_escaped
         for kw in palabras_clave:
             reemplazado = reemplazado.replace(kw, f'<span class="tok-keyword">{kw}</span>')
         
-        # Resaltado de strings entre comillas simples o dobles
-        if '"' in reemplazado or "'" in reemplazado:
-            # Envoltura sencilla para cadenas de texto
-            linea_formateada = reemplazado
-        else:
-            linea_formateada = reemplazado
-
-        # Resaltado de funciones/métodos comunes
-        linea_formateada = linea_formateada.replace('os.', '<span class="tok-variable">os</span>.')
-        linea_formateada = linea_formateada.replace('subprocess.', '<span class="tok-variable">subprocess</span>.')
+        reemplazado = reemplazado.replace('os.', '<span class="tok-variable">os</span>.')
+        reemplazado = reemplazado.replace('subprocess.', '<span class="tok-variable">subprocess</span>.')
+        linea_formateada = reemplazado
 
     return prefijo, linea_formateada
 
@@ -157,14 +146,13 @@ def generar_html(event_data):
     <meta charset="UTF-8">
     <title>{repo_name} - Workspace Dashboard</title>
     <style>
-        /* Paleta de colores inspirada en CodelyTV Theme */
         :root {{
             --codely-bg: #151718;
             --codely-sidebar: #1b1e1f;
             --codely-titlebar: #111314;
             --codely-border: #282c2e;
             --codely-text: #d8dee9;
-            --codely-accent: #f38020; /* Naranja característico Codely */
+            --codely-accent: #f38020;
             --codely-keyword: #cc99cc;
             --codely-string: #99cc99;
             --codely-comment: #65737e;
@@ -182,19 +170,5 @@ def generar_html(event_data):
         .metric-box p {{ margin: 0; font-size: 15px; font-weight: bold; color: #ffffff; word-break: break-all; }}
 
         table {{ width: 100%; border-collapse: collapse; font-size: 13px; color: var(--codely-text); }}
-        th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--codely-border); }}
-        th {{ background-color: #1a1d1e; color: var(--codely-accent); }}
-        tr:hover {{ background-color: #222628; }}
-
-        /* Ventana de entorno estilo CodelyTV */
-        .vscode-window {{ background-color: var(--codely-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--codely-border); box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-top: 15px; }}
-        .vscode-titlebar {{ background-color: var(--codely-titlebar); color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--codely-border); }}
-        .vscode-dots {{ display: flex; gap: 6px; }}
-        .vscode-dot {{ width: 12px; height: 12px; border-radius: 50%; }}
-        .dot-red {{ background-color: #ff5f56; }}
-        .dot-yellow {{ background-color: #ffbd2e; }}
-        .dot-green {{ background-color: #27c93f; }}
-
-        .vscode-body {{ display: flex; height: 480px; background-color: var(--codely-bg); }}
-        .vscode-sidebar {{ width: 240px; background
-    
+        th, td {{ padding: 1
+        
