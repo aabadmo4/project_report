@@ -29,10 +29,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Ejecutar script orquestador modular en Python
+      - name: Ejecutar script analizador en Python
         run: |
-          export PYTHONPATH=$PYTHONPATH:.github/scripts
-          python .github/scripts/main.py
+          cd .github/scripts
+          python analizador.py
 
       - name: Subir artefacto para GitHub Pages
         uses: actions/upload-pages-artifact@v3
@@ -41,4 +41,3 @@ jobs:
 
       - name: Desplegar en GitHub Pages
         uses: actions/deploy-pages@v4
-        
