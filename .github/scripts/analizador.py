@@ -1,5 +1,6 @@
 os = __import__('os')
 json = __import__('json')
+subprocess = __import__('subprocess')
 from datetime import datetime
 
 def cargar_datos_evento():
@@ -8,6 +9,36 @@ def cargar_datos_evento():
         with open(event_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     return {}
+
+def obtener_cambios_git():
+    """Obtiene los archivos modificados y el diff usando comandos de Git locales"""
+    try:
+        # Obtener los archivos modificados en el último commit
+        resultado_archivos = subprocess.run(
+            ['git', 'diff-tree', '--no-commit-id', '--name-status', '-r', 'HEAD'],
+            capture_output=True, text=True, check=True
+        )
+        
+        lineas = resultado_archivos.stdout.strip().split('\n')
+        cambios_archivos = []
+        for linea in lineas:
+            if not linea:
+                continue
+            partes = linea.split('\t')
+            if len(partes) >= 2:
+                estado, archivo = partes[0], partes[1]
+                cambios_archivos.append((estado, archivo))
+
+        # Obtener el diff detallado de líneas
+        resultado_diff = subprocess.run(
+            ['git', 'diff', 'HEAD~1', 'HEAD'],
+            capture_output=True, text=True
+        )
+        diff_texto = resultado_diff.stdout if resultado_diff.returncode == 0 else "No hay diff disponible (primer commit o rama única)."
+
+        return cambios_archivos, diff_texto
+    except Exception as e:
+        return [], f"Error obteniendo diff de git: {str(e)}"
 
 def generar_html(event_data):
     repo_name = os.getenv('GITHUB_REPOSITORY', 'Mi Repositorio')
@@ -18,40 +49,47 @@ def generar_html(event_data):
     commits = event_data.get('commits', [])
     pull_request = event_data.get('pull_request', {})
     
-    # 1. Procesar Commits y extraer cambios de archivos si existen
     commits_html = ""
-    diff_html = ""
-    
     if commits:
         for commit in commits:
             msg = commit.get('message', 'Sin mensaje')
             author = commit.get('author', {}).get('name', 'Anónimo')
             url = commit.get('url', '#')
             commits_html += f"<li><b>{author}</b>: <a href='{url}' target='_blank'>{msg}</a></li>"
-            
-            # Extraer ficheros modificados, añadidos o eliminados en el commit
-            added = commit.get('added', [])
-            modified = commit.get('modified', [])
-            removed = commit.get('removed', [])
-            
-            if added or modified or removed:
-                diff_html += f"<div class='commit-block'><h4>Commit: {msg} (<span>{author}</span>)</h4>"
-                
-                for f in added:
-                    diff_html += f"<div class='file-change added'>[AÑADIDO] {f}</div>"
-                for f in modified:
-                    diff_html += f"<div class='file-change modified'>[MODIFICADO] {f}</div>"
-                for f in removed:
-                    diff_html += f"<div class='file-change removed'>[ELIMINADO] {f}</div>"
-                
-                diff_html += "</div>"
     else:
-        commits_html = "<li>No hay commits recientes en este evento o es un tipo de evento diferente.</li>"
+        commits_html = "<li>No hay commits recientes listados en el evento.</li>"
 
-    if not diff_html:
-        diff_html = "<p>No se registraron cambios directos de archivos en este evento específico.</p>"
+    # Obtener los cambios reales mediante Git
+    archivos_git, diff_git = obtener_cambios_git()
+    
+    diff_html = ""
+    if archivos_git:
+        diff_html += "<div class='commit-block'><h4>Archivos Modificados en este Commit</h4>"
+        for estado, archivo in archivos_git:
+            if estado == 'A':
+                diff_html += f"<div class='file-change added'>[AÑADIDO] {archivo}</div>"
+            elif estado == 'M':
+                diff_html += f"<div class='file-change modified'>[MODIFICADO] {archivo}</div>"
+            elif estado == 'D':
+                diff_html += f"<div class='file-change removed'>[ELIMINADO] {archivo}</div>"
+            else:
+                diff_html += f"<div class='file-change modified'>[{estado}] {archivo}</div>"
+        diff_html += "</div>"
+    
+    # Añadir el visor de código de líneas (Diff formateado)
+    diff_html += f"<h4>Diff de Código (Líneas afectadas)</h4><pre class='code-diff'>"
+    for linea_diff in diff_git.split('\n'):
+        if linea_diff.startswith('+') and not linea_diff.startswith('+++'):
+            diff_html += f"<span class='line-added'>{linea_diff}</span>\n"
+        elif linea_diff.startswith('-') and not linea_diff.startswith('---'):
+            diff_html += f"<span class='line-removed'>{linea_diff}</span>\n"
+        elif linea_diff.startswith('@@'):
+            diff_html += f"<span class='line-chunk'>{linea_diff}</span>\n"
+        else:
+            diff_html += f"{linea_diff}\n"
+    diff_html += "</pre>"
 
-    # 2. Procesar Pull Request si aplica
+    # Procesar Pull Request si aplica
     pr_html = ""
     if pull_request:
         pr_title = pull_request.get('title', 'Sin título')
@@ -69,7 +107,7 @@ def generar_html(event_data):
     else:
         pr_html = "<p>Este workflow no fue disparado por un Pull Request directo.</p>"
 
-    # HTML completo con estilos para el visor de código
+    # HTML completo con estilos mejorados para el diff
     html_content = f"""<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -77,7 +115,7 @@ def generar_html(event_data):
     <title>Dashboard y Visor de Código - {repo_name}</title>
     <style>
         body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #24292e; max-width: 950px; margin: 40px auto; padding: 0 20px; background: #f6f8fa; }}
-        h1, h2, h3 {{ color: #24292e; border-bottom: 1px solid #eaecef; padding-bottom: .3em; }}
+        h1, h2, h3, h4 {{ color: #24292e; border-bottom: 1px solid #eaecef; padding-bottom: .3em; }}
         .card {{ background: #fff; border: 1px solid #e1e4e8; border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }}
         .metrics-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }}
         .metric-box {{ background: #f1f8ff; border: 1px solid #c8e1ff; border-radius: 6px; padding: 15px; text-align: center; }}
@@ -86,14 +124,17 @@ def generar_html(event_data):
         ul {{ padding-left: 20px; }}
         pre {{ background: #f6f8fa; padding: 12px; border-radius: 6px; border: 1px solid #e1e4e8; overflow-x: auto; font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; font-size: 13px; }}
         
-        /* Estilos del Visor de Código / Diff */
         .commit-block {{ background: #fff; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 15px; overflow: hidden; }}
-        .commit-block h4 {{ background: #f3f4f6; margin: 0; padding: 10px 15px; font-size: 14px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }}
-        .commit-block h4 span {{ color: #4b5563; font-weight: normal; font-size: 12px; }}
-        .file-change {{ padding: 8px 15px; font-family: monospace; font-size: 13px; border-bottom: 1px solid #f3f4f6; }}
+        .file-change {{ padding: 6px 12px; font-family: monospace; font-size: 13px; border-bottom: 1px solid #f3f4f6; }}
         .file-change.added {{ background-color: #ecfdf5; color: #065f46; border-left: 4px solid #10b981; }}
         .file-change.modified {{ background-color: #eff6ff; color: #1e40af; border-left: 4px solid #3b82f6; }}
         .file-change.removed {{ background-color: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444; }}
+
+        /* Estilos específicos para las líneas del Diff */
+        .code-diff {{ background-color: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; }}
+        .line-added {{ background-color: rgba(16, 185, 129, 0.2); color: #34d399; display: block; }}
+        .line-removed {{ background-color: rgba(239, 68, 68, 0.2); color: #f87171; display: block; }}
+        .line-chunk {{ color: #569cd6; font-weight: bold; display: block; margin-top: 5px; }}
 
         footer {{ text-align: center; font-size: 12px; color: #586069; margin-top: 40px; }}
     </style>
@@ -109,7 +150,7 @@ def generar_html(event_data):
         </div>
         <div class="metric-box">
             <h3>Commits Analizados</h3>
-            <p>{len(commits)}</p>
+            <p>{len(commits) if commits else 1}</p>
         </div>
     </div>
 
@@ -121,7 +162,7 @@ def generar_html(event_data):
     </div>
 
     <div class="card">
-        <h2>💻 Visor de Cambios en Código (Diff / Archivos Afectados)</h2>
+        <h2>💻 Visor de Cambios en Código (Diff en vivo)</h2>
         {diff_html}
     </div>
 
@@ -140,7 +181,7 @@ def generar_html(event_data):
     os.makedirs('public', exist_ok=True)
     with open('public/index.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
-    print("¡Página con visor de código generada con éxito!")
+    print("¡Página con visor de Git Diff generada con éxito!")
 
 if __name__ == '__main__':
     datos = cargar_datos_evento()
