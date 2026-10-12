@@ -1,7 +1,8 @@
 import os
-from git_service import obtener_info_git_completa, obtener_archivos_y_diff
-from commit_analyzer import analizar_y_generar_conventional_commit
-from html_generator import construir_html_dashboard
+import datetime
+from .git_service import obtener_info_git_completa, obtener_archivos_y_diff
+from .commit_analyzer import analizar_y_generar_conventional_commit
+from .html_generator import construir_html_dashboard
 
 def main():
     full_repo = os.getenv('GITHUB_REPOSITORY', 'usuario/repositorio')
@@ -11,7 +12,6 @@ def main():
         org_owner, repo_name = "Desconocido", full_repo
 
     actor = os.getenv('GITHUB_ACTOR', 'Desconocido')
-    import datetime
     fecha_actual = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     historial_commits = obtener_info_git_completa()
@@ -46,3 +46,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
