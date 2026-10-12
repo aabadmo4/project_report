@@ -140,7 +140,8 @@ def generar_html(event_data):
         </div>"""
         line_num += 1
 
-    html_content = f"""<!DOCTYPE html>
+    # Plantilla HTML con los estilos CSS corregidos (llaves escapadas con dobles {{ }})
+    plantilla_html = """<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -170,5 +171,149 @@ def generar_html(event_data):
         .metric-box p {{ margin: 0; font-size: 15px; font-weight: bold; color: #ffffff; word-break: break-all; }}
 
         table {{ width: 100%; border-collapse: collapse; font-size: 13px; color: var(--codely-text); }}
-        th, td {{ padding: 1
+        th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--codely-border); }}
+        th {{ background-color: #1a1d1e; color: var(--codely-accent); }}
+        tr:hover {{ background-color: #222628; }}
+
+        .vscode-window {{ background-color: var(--codely-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--codely-border); box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-top: 15px; }}
+        .vscode-titlebar {{ background-color: var(--codely-titlebar); color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--codely-border); }}
+        .vscode-dots {{ display: flex; gap: 6px; }}
+        .vscode-dot {{ width: 12px; height: 12px; border-radius: 50%; }}
+        .dot-red {{ background-color: #ff5f56; }}
+        .dot-yellow {{ background-color: #ffbd2e; }}
+        .dot-green {{ background-color: #27c93f; }}
+
+        .vscode-body {{ display: flex; height: 480px; background-color: var(--codely-bg); }}
+        .vscode-sidebar {{ width: 240px; background-color: var(--codely-sidebar); border-right: 1px solid var(--codely-border); overflow-y: auto; font-size: 12px; color: #a0a8b0; }}
+        .vscode-sidebar-title {{ padding: 10px 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; color: var(--codely-accent); letter-spacing: 0.8px; }}
+        .vscode-explorer-item {{ padding: 6px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }}
+        .vscode-explorer-item:hover {{ background-color: #25292b; color: #ffffff; }}
+        .vscode-explorer-item.active-file {{ background-color: #2c3235; color: #ffffff; border-left: 2px solid var(--codely-accent); }}
+
+        .vscode-main-area {{ flex: 1; display: flex; flex-direction: column; overflow: hidden; background-color: var(--codely-bg); }}
+        .vscode-tabs {{ background-color: var(--codely-titlebar); display: flex; border-bottom: 1px solid var(--codely-border); }}
+        .vscode-tab {{ background-color: var(--codely-bg); color: #ffffff; padding: 8px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; border-top: 2px solid var(--codely-accent); border-right: 1px solid var(--codely-border); font-family: Consolas, monospace; }}
+
+        .vscode-editor {{ flex: 1; overflow: auto; font-family: Consolas, "Courier New", monospace; font-size: 12px; padding: 10px 0; background-color: var(--codely-bg); }}
+        .vscode-row {{ display: flex; width: 100%; line-height: 20px; }}
+        .vscode-linenr {{ width: 45px; color: #4f5b66; text-align: right; padding-right: 15px; user-select: none; font-size: 11px; }}
+        .vscode-code-text {{ white-space: pre; flex: 1; color: var(--codely-text); }}
+
+        .tok-keyword {{ color: var(--codely-keyword); font-weight: bold; }}
+        .tok-comment {{ color: var(--codely-comment); font-style: italic; }}
+        .tok-variable {{ color: var(--codely-variable); }}
+        .diff-prefix {{ display: inline-block; width: 15px; font-weight: bold; text-align: center; }}
+
+        .line-added {{ background-color: rgba(153, 204, 153, 0.12); }}
+        .line-added .vscode-code-text {{ color: #a3be8c; }}
+        .line-removed {{ background-color: rgba(191, 97, 106, 0.12); }}
+        .line-removed .vscode-code-text {{ color: #bf616a; text-decoration: line-through; opacity: 0.8; }}
+        .line-chunk {{ color: #88c0d0; font-weight: bold; background-color: rgba(136, 192, 208, 0.1); }}
+
+        footer {{ text-align: center; font-size: 12px; color: var(--codely-comment); margin-top: 30px; }}
+    </style>
+</head>
+<body>
+    <h1>⚡ {repo_name} - Workspace Dashboard</h1>
+    <p style="color: var(--codely-accent);">Generado el <b>{fecha_actual}</b></p>
+
+    <div class="metrics-grid">
+        <div class="metric-box">
+            <h3>Organización</h3>
+            <p>🏢 {org_owner}</p>
+        </div>
+        <div class="metric-box">
+            <h3>Repositorio</h3>
+            <p>📦 {repo_name}</p>
+        </div>
+        <div class="metric-box">
+            <h3>Autor</h3>
+            <p>👤 {autor_commit}</p>
+            <span style="font-size: 11px; color: var(--codely-comment);">{email_commit}</span>
+        </div>
+        <div class="metric-box">
+            <h3>Último Commit</h3>
+            <p><code>{hash_commit}</code></p>
+            <span style="font-size: 11px; color: var(--codely-accent);">{mensaje_commit}</span>
+        </div>
+    </div>
+
+    <div class="section-box">
+        <h2>📜 Changelog Reciente</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Hash</th>
+                    <th>Mensaje</th>
+                    <th>Autor</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                {changelog_html}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section-box">
+        <h2>💻 Visor de Cambios (Diff con Tema CodelyTV)</h2>
         
+        <div class="vscode-window">
+            <div class="vscode-titlebar">
+                <div class="vscode-dots">
+                    <div class="vscode-dot dot-red"></div>
+                    <div class="vscode-dot dot-yellow"></div>
+                    <div class="vscode-dot dot-green"></div>
+                </div>
+                <span>{repo_name} — git diff (Codely Theme)</span>
+                <span style="font-size: 11px; color: var(--codely-comment);">UTF-8 | Git Diff</span>
+            </div>
+            
+            <div class="vscode-body">
+                <div class="vscode-sidebar">
+                    <div class="vscode-sidebar-title">📁 Explorer</div>
+                    {explorer_html}
+                </div>
+                
+                <div class="vscode-main-area">
+                    <div class="vscode-tabs">
+                        <div class="vscode-tab">📄 {archivo_principal} (Changes)</div>
+                    </div>
+                    <div class="vscode-editor">
+                        {editor_lineas}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Pipeline automatizado con Python y GitHub Actions.</p>
+    </footer>
+</body>
+</html>
+"""
+
+    html_content = plantilla_html.format(
+        repo_name=repo_name,
+        fecha_actual=fecha_actual,
+        org_owner=org_owner,
+        autor_commit=commit_actual['author'],
+        email_commit=commit_actual['email'],
+        hash_commit=commit_actual['hash'],
+        mensaje_commit=commit_actual['message'],
+        changelog_html=changelog_html,
+        explorer_html=explorer_html,
+        archivo_principal=archivo_principal,
+        editor_lineas=editor_lineas
+    )
+
+    os.makedirs('public', exist_ok=True)
+    with open('public/index.html', 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    print("¡Workspace con tema CodelyTV generado con éxito sin errores de sintaxis!")
+
+if __name__ == '__main__':
+    datos = cargar_datos_evento()
+    generar_html(datos)
+    
