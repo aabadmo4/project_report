@@ -31,8 +31,8 @@ jobs:
 
       - name: Ejecutar script orquestador modular en Python
         run: |
-          cd .github/scripts
-          python main.py
+          export PYTHONPATH=$PYTHONPATH:.github/scripts
+          python .github/scripts/main.py
 
       - name: Subir artefacto para GitHub Pages
         uses: actions/upload-pages-artifact@v3
