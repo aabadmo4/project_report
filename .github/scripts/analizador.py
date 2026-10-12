@@ -1,6 +1,7 @@
 os = __import__('os')
 json = __import__('json')
 subprocess = __import__('subprocess')
+html_mod = __import__('html')
 from datetime import datetime
 
 def cargar_datos_evento():
@@ -34,34 +35,66 @@ def obtener_info_git_completa():
     except Exception as e:
         return []
 
-def obtener_archivos_y_codigo():
+def obtener_archivos_y_diff():
     try:
-        # Obtener listado de archivos tracked del repo para el explorador lateral
         resultado_archivos = subprocess.run(
             ['git', 'ls-files'],
             capture_output=True, text=True, check=True
         )
         archivos = [linea.strip() for linea in resultado_archivos.stdout.strip().split('\n') if linea.strip()]
         
-        # Tomar el primer archivo modificado o por defecto el script
-        archivo_principal = ".github/scripts/analizador.py"
+        resultado_diff = subprocess.run(
+            ['git', 'diff', 'HEAD~1', 'HEAD'],
+            capture_output=True, text=True
+        )
+        diff_texto = resultado_diff.stdout if resultado_diff.returncode == 0 else "No hay diff disponible."
+
         resultado_mod = subprocess.run(
             ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'],
             capture_output=True, text=True
         )
         modificados = [l.strip() for l in resultado_mod.stdout.strip().split('\n') if l.strip()]
-        if modificados:
-            archivo_principal = modificados[0]
+        archivo_principal = modificados[0] if modificados else "cambios.diff"
 
-        # Leer el contenido completo del archivo principal para mostrarlo en modo editor
-        contenido_archivo = "# Archivo no encontrado"
-        if os.path.exists(archivo_principal):
-            with open(archivo_principal, 'r', encoding='utf-8') as f:
-                contenido_archivo = f.read()
-
-        return archivos, archivo_principal, contenido_archivo
+        return archivos, archivo_principal, diff_texto
     except Exception as e:
-        return [], "analizador.py", f"# Error cargando archivos: {str(e)}"
+        return [], "cambios.diff", f"Error: {str(e)}"
+
+def colorear_sintaxis_codely(linea):
+    """Aplica resaltado de sintaxis inspirado en el tema CodelyTV (palabras clave, strings, comentarios)"""
+    linea_escaped = html_mod.escape(linea)
+    
+    # Si es una línea de diff añadida o eliminada
+    prefijo = ""
+    if linea_escaped.startswith('+'):
+        prefijo = "+"
+        linea_escaped = linea_escaped[1:]
+    elif linea_escaped.startswith('-'):
+        prefijo = "-"
+        linea_escaped = linea_escaped[1:]
+
+    # Resaltado básico de comentarios (# o """)
+    if linea_escaped.strip().startswith('#') or linea_escaped.strip().startswith('"""'):
+        linea_formateada = f'<span class="tok-comment">{linea_escaped}</span>'
+    else:
+        # Resaltado de palabras clave de programación comunes
+        palabras_clave = ['def ', 'import ', 'return ', 'class ', 'try:', 'except', 'for ', 'in ', 'if ', 'with ', 'as ']
+        reemplazado = linea_escaped
+        for kw in palabras_clave:
+            reemplazado = reemplazado.replace(kw, f'<span class="tok-keyword">{kw}</span>')
+        
+        # Resaltado de strings entre comillas simples o dobles
+        if '"' in reemplazado or "'" in reemplazado:
+            # Envoltura sencilla para cadenas de texto
+            linea_formateada = reemplazado
+        else:
+            linea_formateada = reemplazado
+
+        # Resaltado de funciones/métodos comunes
+        linea_formateada = linea_formateada.replace('os.', '<span class="tok-variable">os</span>.')
+        linea_formateada = linea_formateada.replace('subprocess.', '<span class="tok-variable">subprocess</span>.')
+
+    return prefijo, linea_formateada
 
 def generar_html(event_data):
     full_repo = os.getenv('GITHUB_REPOSITORY', 'usuario/repositorio')
@@ -85,165 +118,83 @@ def generar_html(event_data):
             <td><code>{c['hash']}</code></td>
             <td><b>{c['message']}</b></td>
             <td>{c['author']}</td>
-            <td style="font-size: 11px; color: #586069;">{c['date']}</td>
+            <td style="font-size: 11px; color: #858585;">{c['date']}</td>
         </tr>
         """
 
-    lista_archivos, archivo_principal, contenido_codigo = obtener_archivos_y_codigo()
+    lista_archivos, archivo_principal, diff_contenido = obtener_archivos_y_diff()
 
-    # Construir el explorador de archivos lateral estilo VS Code
     explorer_html = ""
-    for f in lista_archivos[:25]: # Limitar para que no sea infinito
+    for f in lista_archivos[:25]:
         activo_class = "active-file" if f == archivo_principal else ""
         explorer_html += f'<div class="vscode-explorer-item {activo_class}">📄 {f}</div>'
 
-    # Construir líneas del editor con números y color tipo tema oscuro CodelyTV
     editor_lineas = ""
-    for idx, linea in enumerate(contenido_codigo.split('\n'), start=1):
-        linea_escaped = linea.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        editor_lineas += f"""<div class="vscode-row">
-            <span class="vscode-linenr">{idx}</span>
-            <span class="vscode-code-text">{linea_escaped}</span>
+    line_num = 1
+    for linea in diff_contenido.split('\n'):
+        if linea.startswith('+++') or linea.startswith('---') or linea.startswith('index') or linea.startswith('diff --git'):
+            continue
+            
+        clase_linea = ""
+        if linea.startswith('+'):
+            clase_linea = "line-added"
+        elif linea.startswith('-'):
+            clase_linea = "line-removed"
+        elif linea.startswith('@@'):
+            clase_linea = "line-chunk"
+
+        prefijo, codigo_html = colorear_sintaxis_codely(linea)
+        
+        editor_lineas += f"""<div class="vscode-row {clase_linea}">
+            <span class="vscode-linenr">{line_num}</span>
+            <span class="vscode-code-text"><span class="diff-prefix">{prefijo}</span>{codigo_html}</span>
         </div>"""
+        line_num += 1
 
     html_content = f"""<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{repo_name} - VS Code View</title>
+    <title>{repo_name} - Workspace Dashboard</title>
     <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #24292e; max-width: 1150px; margin: 20px auto; padding: 0 15px; background: #1e1e1e; }}
-        h1, h2 {{ color: #ffffff; border-bottom: 1px solid #333; padding-bottom: .3em; }}
+        /* Paleta de colores inspirada en CodelyTV Theme */
+        :root {{
+            --codely-bg: #151718;
+            --codely-sidebar: #1b1e1f;
+            --codely-titlebar: #111314;
+            --codely-border: #282c2e;
+            --codely-text: #d8dee9;
+            --codely-accent: #f38020; /* Naranja característico Codely */
+            --codely-keyword: #cc99cc;
+            --codely-string: #99cc99;
+            --codely-comment: #65737e;
+            --codely-variable: #f8c555;
+        }}
+
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: var(--codely-text); max-width: 1150px; margin: 20px auto; padding: 0 15px; background: var(--codely-bg); }}
+        h1, h2 {{ color: #ffffff; border-bottom: 1px solid var(--codely-border); padding-bottom: .3em; }}
         
-        .section-box {{ background: #252526; border: 1px solid #333; border-radius: 6px; padding: 20px; margin-bottom: 25px; color: #d4d4d4; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }}
+        .section-box {{ background: var(--codely-sidebar); border: 1px solid var(--codely-border); border-radius: 6px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }}
         
         .metrics-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }}
-        .metric-box {{ background: #2d2d2d; border: 1px solid #3c3c3c; border-radius: 6px; padding: 15px; color: #d4d4d4; }}
-        .metric-box h3 {{ margin: 0 0 8px 0; font-size: 11px; color: #4ec9b0; border: none; text-transform: uppercase; letter-spacing: 1px; }}
+        .metric-box {{ background: #1f2324; border: 1px solid var(--codely-border); border-radius: 6px; padding: 15px; }}
+        .metric-box h3 {{ margin: 0 0 8px 0; font-size: 11px; color: var(--codely-accent); border: none; text-transform: uppercase; letter-spacing: 1px; }}
         .metric-box p {{ margin: 0; font-size: 15px; font-weight: bold; color: #ffffff; word-break: break-all; }}
 
-        table {{ width: 100%; border-collapse: collapse; font-size: 13px; color: #d4d4d4; }}
-        th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid #333; }}
-        th {{ background-color: #2d2d2d; color: #9cdcfe; }}
-        tr:hover {{ background-color: #2a2d2e; }}
+        table {{ width: 100%; border-collapse: collapse; font-size: 13px; color: var(--codely-text); }}
+        th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--codely-border); }}
+        th {{ background-color: #1a1d1e; color: var(--codely-accent); }}
+        tr:hover {{ background-color: #222628; }}
 
-        /* Estética de Entorno VS Code (Estilo CodelyTV Theme) */
-        .vscode-window {{ background-color: #181818; border-radius: 8px; overflow: hidden; border: 1px solid #333; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 15px; }}
-        .vscode-titlebar {{ background-color: #323233; color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #252526; }}
+        /* Ventana de entorno estilo CodelyTV */
+        .vscode-window {{ background-color: var(--codely-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--codely-border); box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-top: 15px; }}
+        .vscode-titlebar {{ background-color: var(--codely-titlebar); color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--codely-border); }}
         .vscode-dots {{ display: flex; gap: 6px; }}
         .vscode-dot {{ width: 12px; height: 12px; border-radius: 50%; }}
         .dot-red {{ background-color: #ff5f56; }}
         .dot-yellow {{ background-color: #ffbd2e; }}
         .dot-green {{ background-color: #27c93f; }}
 
-        .vscode-body {{ display: flex; height: 500px; background-color: #1e1e1e; }}
-        .vscode-sidebar {{ width: 240px; background-color: #252526; border-right: 1px solid #1e1e1e; overflow-y: auto; font-size: 12px; color: #bbbbbb; }}
-        .vscode-sidebar-title {{ padding: 10px 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; color: #bbbbbb; letter-spacing: 0.8px; }}
-        .vscode-explorer-item {{ padding: 6px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }}
-        .vscode-explorer-item:hover {{ background-color: #2a2d2e; color: #ffffff; }}
-        .vscode-explorer-item.active-file {{ background-color: #37373d; color: #ffffff; border-left: 2px solid #007acc; }}
-
-        .vscode-main-area {{ flex: 1; display: flex; flexDirection: column; overflow: hidden; background-color: #1e1e1e; }}
-        .vscode-tabs {{ background-color: #2d2d2d; display: flex; border-bottom: 1px solid #252526; }}
-        .vscode-tab {{ background-color: #1e1e1e; color: #ffffff; padding: 8px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; border-top: 2px solid #007acc; border-right: 1px solid #252526; font-family: Consolas, monospace; }}
-
-        .vscode-editor {{ flex: 1; overflow: auto; font-family: Consolas, "Courier New", monospace; font-size: 13px; padding: 10px 0; background-color: #1e1e1e; color: #d4d4d4; }}
-        .vscode-row {{ display: flex; width: 100%; line-height: 22px; }}
-        .vscode-linenr {{ width: 50px; color: #858585; text-align: right; padding-right: 15px; user-select: none; font-size: 12px; }}
-        .vscode-code-text {{ white-space: pre; flex: 1; }}
-
-        footer {{ text-align: center; font-size: 12px; color: #858585; margin-top: 30px; }}
-    </style>
-</head>
-<body>
-    <h1>⚡ {repo_name} - Workspace Dashboard</h1>
-    <p style="color: #9cdcfe;">Generado el <b>{fecha_actual}</b></p>
-
-    <div class="metrics-grid">
-        <div class="metric-box">
-            <h3>Organización</h3>
-            <p>🏢 {org_owner}</p>
-        </div>
-        <div class="metric-box">
-            <h3>Repositorio</h3>
-            <p>📦 {repo_name}</p>
-        </div>
-        <div class="metric-box">
-            <h3>Autor</h3>
-            <p>👤 {commit_actual['author']}</p>
-            <span style="font-size: 11px; color: #858585;">{commit_actual['email']}</span>
-        </div>
-        <div class="metric-box">
-            <h3>Último Commit</h3>
-            <p><code>{commit_actual['hash']}</code></p>
-            <span style="font-size: 11px; color: #ce9178;">{commit_actual['message']}</span>
-        </div>
-    </div>
-
-    <div class="section-box">
-        <h2>📜 Changelog Reciente</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Hash</th>
-                    <th>Mensaje</th>
-                    <th>Autor</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody>
-                {changelog_html}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="section-box">
-        <h2>💻 Explorador y Visor de Código (Entorno VS Code)</h2>
-        
-        <div class="vscode-window">
-            <div class="vscode-titlebar">
-                <div class="vscode-dots">
-                    <div class="vscode-dot dot-red"></div>
-                    <div class="vscode-dot dot-yellow"></div>
-                    <div class="vscode-dot dot-green"></div>
-                </div>
-                <span>{repo_name} - Visual Studio Code (Solo Lectura)</span>
-                <span style="font-size: 11px; color: #858585;">UTF-8 | Python</span>
-            </div>
-            
-            <div class="vscode-body">
-                <!-- Barra lateral de explorador -->
-                <div class="vscode-sidebar">
-                    <div class="vscode-sidebar-title">📁 Explorer</div>
-                    {explorer_html}
-                </div>
-                
-                <!-- Área principal con pestañas y editor -->
-                <div class="vscode-main-area">
-                    <div class="vscode-tabs">
-                        <div class="vscode-tab">📄 {archivo_principal}</div>
-                    </div>
-                    <div class="vscode-editor">
-                        {editor_lineas}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <footer>
-        <p>Pipeline automatizado con Python y GitHub Actions.</p>
-    </footer>
-</body>
-</html>
-"""
-
-    os.makedirs('public', exist_ok=True)
-    with open('public/index.html', 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    print("¡Workspace estilo VS Code generado con éxito!")
-
-if __name__ == '__main__':
-    datos = cargar_datos_evento()
-    generar_html(datos)
+        .vscode-body {{ display: flex; height: 480px; background-color: var(--codely-bg); }}
+        .vscode-sidebar {{ width: 240px; background
     
