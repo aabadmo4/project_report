@@ -31,8 +31,7 @@ jobs:
 
       - name: Ejecutar script analizador en Python
         run: |
-          cd .github/scripts
-          python analizador.py
+          python .github/scripts/analizador.py
 
       - name: Subir artefacto para GitHub Pages
         uses: actions/upload-pages-artifact@v3
@@ -41,3 +40,4 @@ jobs:
 
       - name: Desplegar en GitHub Pages
         uses: actions/deploy-pages@v4
+        
