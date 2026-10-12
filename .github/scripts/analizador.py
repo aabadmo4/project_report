@@ -60,9 +60,49 @@ def obtener_archivos_y_diff():
     except Exception as e:
         return [], "cambios.diff", f"Error: {str(e)}"
 
+def analizar_y_generar_conventional_commit(archivo, diff_texto):
+    """Analiza los cambios para proponer un Conventional Commit y una descripción en texto"""
+    archivo_lower = archivo.lower()
+    diff_lower = diff_texto.lower()
+    
+    # Deducción inteligente del tipo de commit según los estándares
+    if 'style' in diff_lower or 'css' in diff_lower or 'color' in diff_lower:
+        tipo = "style"
+        alcance = "ui"
+        descripcion_corta = "update styling and layout design"
+    elif 'fix' in diff_lower or 'error' in diff_lower or 'bug' in diff_lower:
+        tipo = "fix"
+        alcance = "core"
+        descripcion_corta = "resolve minor bug or syntax issue"
+    elif 'workflow' in diff_lower or 'actions' in archivo_lower:
+        tipo = "ci"
+        alcance = "actions"
+        descripcion_corta = "update CI/CD pipeline workflow configuration"
+    elif 'analizador.py' in archivo_lower:
+        tipo = "refactor"
+        alcance = "report"
+        descripcion_corta = "refactor script analytics and HTML layout generation"
+    else:
+        tipo = "feat"
+        alcance = "app"
+        descripcion_corta = "update codebase features and components"
+
+    commit_sugerido = f"{tipo}({alcance}): {descripcion_corta}"
+    
+    # Generar descripción textual detallada de los cambios
+    lineas_agregadas = sum(1 for l in diff_texto.split('\n') if l.startswith('+') and not l.startswith('+++'))
+    lineas_eliminadas = sum(1 for l in diff_texto.split('\n') if l.startswith('-') and not l.startswith('---'))
+    
+    texto_resumen = (
+        f"Se han modificado componentes clave en el archivo <code>{archivo}</code>. "
+        f"El análisis detectó un total de <b>{lineas_agregadas} líneas añadidas</b> y <b>{lineas_eliminadas} líneas eliminadas</b>. "
+        f"Los ajustes se centran en mejorar la estructura visual, la presentación de datos y la automatización del workspace."
+    )
+
+    return commit_sugerido, texto_resumen
+
 def colorear_sintaxis_codely(linea):
     linea_escaped = html_mod.escape(linea)
-    
     prefijo = ""
     if linea_escaped.startswith('+'):
         prefijo = "+"
@@ -112,6 +152,7 @@ def generar_html(event_data):
         """
 
     lista_archivos, archivo_principal, diff_contenido = obtener_archivos_y_diff()
+    commit_sugerido, descripcion_cambios = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
 
     explorer_html = ""
     for f in lista_archivos[:25]:
@@ -140,7 +181,6 @@ def generar_html(event_data):
         </div>"""
         line_num += 1
 
-    # Plantilla HTML con los estilos CSS corregidos (llaves escapadas con dobles {{ }})
     plantilla_html = """<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -174,6 +214,9 @@ def generar_html(event_data):
         th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--codely-border); }}
         th {{ background-color: #1a1d1e; color: var(--codely-accent); }}
         tr:hover {{ background-color: #222628; }}
+
+        .ai-summary-box {{ background: #1a1d1e; border-left: 4px solid var(--codely-accent); padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }}
+        .conventional-tag {{ display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 4px 8px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; margin-top: 8px; border: 1px solid #3c4245; }}
 
         .vscode-window {{ background-color: var(--codely-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--codely-border); box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-top: 15px; }}
         .vscode-titlebar {{ background-color: var(--codely-titlebar); color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--codely-border); }}
@@ -239,6 +282,15 @@ def generar_html(event_data):
     </div>
 
     <div class="section-box">
+        <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
+        <div class="ai-summary-box">
+            <p>{descripcion_cambios}</p>
+            <div><b>Título de Commit Estándar Sugerido:</b></div>
+            <div class="conventional-tag">{commit_sugerido}</div>
+        </div>
+    </div>
+
+    <div class="section-box">
         <h2>📜 Changelog Reciente</h2>
         <table>
             <thead>
@@ -256,7 +308,7 @@ def generar_html(event_data):
     </div>
 
     <div class="section-box">
-        <h2>💻 Visor de Cambios (Diff con Tema CodelyTV)</h2>
+        <h2>💻 Visor de Cambios</h2>
         
         <div class="vscode-window">
             <div class="vscode-titlebar">
@@ -265,8 +317,8 @@ def generar_html(event_data):
                     <div class="vscode-dot dot-yellow"></div>
                     <div class="vscode-dot dot-green"></div>
                 </div>
-                <span>{repo_name} — git diff (Codely Theme)</span>
-                <span style="font-size: 11px; color: var(--codely-comment);">UTF-8 | Git Diff</span>
+                <span>{repo_name} — Workspace Viewer</span>
+                <span style="font-size: 11px; color: var(--codely-comment);">UTF-8 | Changes</span>
             </div>
             
             <div class="vscode-body">
@@ -302,6 +354,8 @@ def generar_html(event_data):
         email_commit=commit_actual['email'],
         hash_commit=commit_actual['hash'],
         mensaje_commit=commit_actual['message'],
+        commit_sugerido=commit_sugerido,
+        descripcion_cambios=descripcion_cambios,
         changelog_html=changelog_html,
         explorer_html=explorer_html,
         archivo_principal=archivo_principal,
@@ -311,7 +365,7 @@ def generar_html(event_data):
     os.makedirs('public', exist_ok=True)
     with open('public/index.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
-    print("¡Workspace con tema CodelyTV generado con éxito sin errores de sintaxis!")
+    print("¡Workspace actualizado con Conventional Commits y diseño limpio generado con éxito!")
 
 if __name__ == '__main__':
     datos = cargar_datos_evento()
