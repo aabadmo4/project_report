@@ -6,13 +6,11 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened, closed ]
 
-# Permisos necesarios para interactuar con GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Solo permitir un despliegue concurrente para evitar conflictos
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -24,16 +22,17 @@ jobs:
       - name: Clonar el repositorio
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necesario para poder calcular los diffs entre commits
+          fetch-depth: 0 # Obligatorio para que Git pueda calcular los diffs y el log
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Ejecutar script analizador en Python
+      - name: Ejecutar script orquestador modular en Python
         run: |
-          python .github/scripts/analizador.py
+          cd .github/scripts
+          python main.py
 
       - name: Subir artefacto para GitHub Pages
         uses: actions/upload-pages-artifact@v3
