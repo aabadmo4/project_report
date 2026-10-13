@@ -32,8 +32,11 @@
         .hash-link {{ color: var(--codely-accent); text-decoration: none; font-weight: bold; }}
         .hash-link:hover {{ text-decoration: underline; }}
         .ai-summary-box {{ background: #1a1d1e; border-left: 4px solid var(--codely-accent); padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; position: relative; }}
-        .conventional-header {{ display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; }}
-        .conventional-tag {{ display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 6px 12px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; border: 1px solid #3c4245; }}
+        .commit-comparison {{ display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }}
+        @media (max-width: 768px) {{ .commit-comparison {{ grid-template-columns: 1fr; }} }}
+        .commit-card {{ background: #151718; border: 1px solid var(--codely-border); border-radius: 6px; padding: 15px; }}
+        .commit-card h4 {{ margin-top: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--codely-comment); }}
+        .conventional-tag {{ display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 6px 12px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; border: 1px solid #3c4245; margin-bottom: 10px; }}
         .btn-copy {{ background: var(--codely-accent); color: #111314; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; transition: opacity 0.2s; }}
         .btn-copy:hover {{ opacity: 0.85; }}
         .diff-stats {{ display: inline-flex; gap: 8px; font-family: Consolas, monospace; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #111314; border: 1px solid var(--codely-border); }}
@@ -95,20 +98,35 @@
         <div class="metric-box">
             <h3>Último Commit</h3>
             <p><a href="{repo_url}/commit/{hash_c}" target="_blank" class="hash-link"><code>{hash_c}</code></a></p>
-            <span style="font-size: 11px; color: var(--codely-accent);">{mensaje_c}</span>
+            <span style="font-size: 11px; color: var(--codely-accent);">{mensaje_original}</span>
         </div>
     </div>
 
     <div class="section-box">
-        <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
+        <h2>📝 Comparativa de Commits: Original vs. Sugerido</h2>
         <div class="ai-summary-box">
             <p>{descripcion_cambios}</p>
-            <div><b>Título de Commit Estándar Sugerido:</b></div>
-            <div class="conventional-header">
-                <div class="conventional-tag" id="commit-title">{commit_sugerido}</div>
-                <button class="btn-copy" onclick="copiarCommit()">📋 Copiar Commit</button>
+            
+            <div class="commit-comparison">
+                <!-- Tarjeta Original -->
+                <div class="commit-card">
+                    <h4>Commit Original (Git)</h4>
+                    <div style="font-family: Consolas, monospace; font-size: 13px; color: #bf616a; margin-bottom: 10px; word-break: break-all;">
+                        <b>{mensaje_original}</b>
+                    </div>
+                    <div style="font-size: 12px; color: var(--codely-comment);">
+                        Texto introducido manualmente al realizar el push o commit inicial.
+                    </div>
+                </div>
+
+                <!-- Tarjeta Sugerida -->
+                <div class="commit-card">
+                    <h4>Commit Generado (Conventional)</h4>
+                    <div class="conventional-tag">{commit_sugerido}</div>
+                    <div style="font-family: Consolas, monospace; font-size: 12px; background: #111314; padding: 8px; border-radius: 4px; border: 1px solid #282c2e; margin-bottom: 10px; white-space: pre-wrap;">{cuerpo_generado}</div>
+                    <button class="btn-copy" onclick="copiarCommit()">📋 Copiar Sugerencia</button>
+                </div>
             </div>
-            {cuerpo_pie_commit}
         </div>
     </div>
 
