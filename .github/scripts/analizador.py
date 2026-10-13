@@ -117,6 +117,31 @@ def colorear_sintaxis_codely(linea):
 
     return prefijo, linea_formateada
 
+def aplicar_git_amend_automatico(commit_titulo, commit_cuerpo):
+    try:
+        # Verificar si ya tiene el formato conventional para evitar bucles infinitos de amend
+        resultado_log = subprocess.run(['git', 'log', '-1', '--pretty=format:%s'], capture_output=True, text=True, check=True)
+        ultimo_mensaje = resultado_log.stdout.strip()
+        
+        if ultimo_mensaje.startswith(('feat(', 'fix(', 'refactor(', 'style(', 'ci(', 'docs(', 'test(', 'perf(')):
+            print("El commit actual ya cuenta con formato Conventional Commit. Omitiendo amend.")
+            return
+
+        mensaje_completo = f"{commit_titulo}\n\n{commit_cuerpo}"
+        
+        # Añadir el index.html generado recientemente al commit
+        subprocess.run(['git', 'add', 'index.html'], check=True)
+        
+        # Modificar el commit actual
+        subprocess.run(['git', 'commit', '--amend', '-m', mensaje_completo], check=True)
+        
+        # Forzar la actualización en el servidor remoto de GitHub
+        branch = os.getenv('GITHUB_REF_NAME', 'main')
+        subprocess.run(['git', 'push', 'origin', f'HEAD:{branch}', '--force'], check=True)
+        print("¡Commit modificado en el servidor remoto con éxito!")
+    except Exception as e:
+        print(f"Aviso en la modificación automática del commit: {str(e)}")
+
 def generar_html(event_data):
     full_repo = os.getenv('GITHUB_REPOSITORY', 'aabadmo4/project_report')
     org_owner, repo_name = full_repo.split('/') if '/' in full_repo else ("Desconocido", full_repo)
@@ -197,6 +222,9 @@ def generar_html(event_data):
     with open(index_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
     print(f"¡Dashboard generado con éxito en: {index_path}!")
+
+    # Ejecutar la modificación automática del commit en el servidor remoto
+    aplicar_git_amend_automatico(commit_sugerido, cuerpo_generado)
 
 if __name__ == '__main__':
     generar_html(cargar_datos_evento())
