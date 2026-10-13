@@ -9,7 +9,6 @@ permissions:
   pages: write
   id-token: write
 
-# Permite una única ejecución simultánea de despliegue
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -34,19 +33,13 @@ jobs:
           git config --global user.name "Workspace Agent"
           git config --global user.email "automation@github.com"
 
-      - name: Configurar GitHub Pages
-        uses: actions/configure-pages@v4
-
-      - name: Asegurar directorio public y ejecutar analizador
-        run: |
-          mkdir -p public
-          python .github/scripts/analizador.py
-          ls -la public/
+      - name: Ejecutar analizador de commits
+        run: python .github/scripts/analizador.py
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './public'
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
