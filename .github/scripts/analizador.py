@@ -81,22 +81,17 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
     
     descripcion_cambios = (
         f"Se han modificado componentes clave en el archivo <code>{archivo}</code>. "
-        f"El análisis detectó un total de <b>{lineas_agregadas} líneas añadidas</b> y <b>{lineas_eliminadas} líneas eliminadas</b>. "
-        f"Los ajustes se centran en mejorar la estructura visual, la presentación de datos y la automatización del workspace."
+        f"El análisis detectó un total de <b>{lineas_agregadas} líneas añadidas</b> y <b>{lineas_eliminadas} líneas eliminadas</b>."
     )
 
-    cuerpo_pie_commit = (
-        '<div style="margin-top: 12px; font-size: 13px; font-family: Consolas, monospace; background: #111314; padding: 12px; border-radius: 4px; border: 1px solid #282c2e; position: relative;">'
-        '<span style="color: #d8dee9;">* Actualiza los componentes y la estructura del proyecto en el workspace.</span><br>'
-        '<span style="color: #d8dee9;">* Optimiza la presentación visual y el flujo automatizado de reportes.</span><br><br>'
-        '<span style="color: #65737e;">Ref: Workspace Automation & Dashboard</span><br>'
-        '<span style="color: #65737e;">Signed-off-by: Workspace Agent &lt;automation@github.com&gt;</span>'
-        '</div>'
+    cuerpo_generado = (
+        "* Actualiza los componentes y la estructura del proyecto en el workspace.\n"
+        "* Optimiza la presentación visual y el flujo automatizado de reportes."
     )
 
-    texto_para_copiar = f"{commit_sugerido}\n\n* Actualiza los componentes y la estructura del proyecto en el workspace.\n* Optimiza la presentación visual y el flujo automatizado de reportes."
+    texto_para_copiar = f"{commit_sugerido}\n\n{cuerpo_generado}"
 
-    return commit_sugerido, descripcion_cambios, cuerpo_pie_commit, lineas_agregadas, lineas_eliminadas, texto_para_copiar
+    return commit_sugerido, cuerpo_generado, descripcion_cambios, agregadas, eliminadas, texto_para_copiar
 
 def colorear_sintaxis_codely(linea):
     linea_escaped = html_mod.escape(linea)
@@ -130,6 +125,8 @@ def generar_html(event_data):
 
     historial_commits = obtener_info_git_completa()
     commit_actual = historial_commits[0] if historial_commits else {'hash': 'N/A', 'author': actor, 'email': 'N/A', 'date': fecha_actual, 'message': 'Sin commits'}
+    
+    mensaje_original = commit_actual['message']
     repo_url = f"https://github.com/{full_repo}"
 
     changelog_html = "".join([
@@ -138,7 +135,7 @@ def generar_html(event_data):
     ])
 
     lista_archivos, archivo_principal, diff_contenido = obtener_archivos_y_diff()
-    commit_sugerido, descripcion_cambios, cuerpo_pie_commit, agregadas, eliminadas, texto_copiar = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
+    commit_sugerido, cuerpo_generado, descripcion_cambios, agregadas, eliminadas, texto_copiar = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
 
     explorer_html = "".join([
         f'<a href="{repo_url}/blob/main/{f}" target="_blank" class="vscode-explorer-item {"active-file" if f == archivo_principal else ""}">📄 {f}</a>'
@@ -181,11 +178,11 @@ def generar_html(event_data):
         autor=commit_actual['author'],
         email=commit_actual['email'],
         hash_c=commit_actual['hash'],
-        mensaje_c=commit_actual['message'],
+        mensaje_original=mensaje_original,
         repo_url=repo_url,
         descripcion_cambios=descripcion_cambios,
         commit_sugerido=commit_sugerido,
-        cuerpo_pie_commit=cuerpo_pie_commit,
+        cuerpo_generado=cuerpo_generado,
         explorer_html=explorer_html,
         archivo_principal=archivo_principal,
         agregadas=agregadas,
@@ -199,7 +196,7 @@ def generar_html(event_data):
     os.makedirs(public_dir, exist_ok=True)
     with open(os.path.join(public_dir, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(html_content)
-    print("¡Dashboard completo generado con éxito desde plantilla externa!")
+    print("¡Dashboard con comparativa de commits generado con éxito!")
 
 if __name__ == '__main__':
     generar_html(cargar_datos_evento())
