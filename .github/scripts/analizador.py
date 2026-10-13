@@ -101,14 +101,14 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
         "* Optimiza la presentación visual y el flujo automatizado de reportes."
     )
 
-    cuerpo_pie_commit = f"""
-    <div style="margin-top: 12px; font-size: 13px; font-family: Consolas, monospace; background: #111314; padding: 12px; border-radius: 4px; border: 1px solid #282c2e; position: relative;">
-        <span style="color: #d8dee9;">* Actualiza los componentes y la estructura del proyecto en el workspace.</span><br>
-        <span style="color: #d8dee9;">* Optimiza la presentación visual y el flujo automatizado de reportes.</span><br><br>
-        <span style="color: #65737e;">Ref: Workspace Automation & Dashboard</span><br>
-        <span style="color: #65737e;">Signed-off-by: Workspace Agent &lt;automation@github.com&gt;</span>
-    </div>
-    """
+    cuerpo_pie_commit = (
+        '<div style="margin-top: 12px; font-size: 13px; font-family: Consolas, monospace; background: #111314; padding: 12px; border-radius: 4px; border: 1px solid #282c2e; position: relative;">'
+        '<span style="color: #d8dee9;">* Actualiza los componentes y la estructura del proyecto en el workspace.</span><br>'
+        '<span style="color: #d8dee9;">* Optimiza la presentación visual y el flujo automatizado de reportes.</span><br><br>'
+        '<span style="color: #65737e;">Ref: Workspace Automation & Dashboard</span><br>'
+        '<span style="color: #65737e;">Signed-off-by: Workspace Agent &lt;automation@github.com&gt;</span>'
+        '</div>'
+    )
 
     texto_para_copiar = f"{commit_sugerido}\n\n{cuerpo_texto}"
 
@@ -158,14 +158,14 @@ def generar_html(event_data):
     changelog_html = ""
     for c in historial_commits:
         commit_link = f"{repo_url}/commit/{c['hash']}"
-        changelog_html += f"""
-        <tr class="changelog-row">
-            <td><a href="{commit_link}" target="_blank" class="hash-link"><code>{c['hash']}</code></a></td>
-            <td class="msg-cell"><b>{c['message']}</b></td>
-            <td class="author-cell">{c['author']}</td>
-            <td style="font-size: 11px; color: #858585;">{c['date']}</td>
-        </tr>
-        """
+        changelog_html += (
+            f'<tr class="changelog-row">'
+            f'<td><a href="{commit_link}" target="_blank" class="hash-link"><code>{c["hash"]}</code></a></td>'
+            f'<td class="msg-cell"><b>{c["message"]}</b></td>'
+            f'<td class="author-cell">{c["author"]}</td>'
+            f'<td style="font-size: 11px; color: #858585;">{c["date"]}</td>'
+            f'</tr>'
+        )
 
     lista_archivos, archivo_principal, diff_contenido = obtener_archivos_y_diff()
     commit_sugerido, descripcion_cambios, cuerpo_pie_commit, agregadas, eliminadas, texto_copiar = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
@@ -192,13 +192,15 @@ def generar_html(event_data):
 
         prefijo, codigo_html = colorear_sintaxis_codely(linea)
         
-        editor_lineas += f"""<div class="vscode-row {clase_linea}">
-            <span class="vscode-linenr">{line_num}</span>
-            <span class="vscode-code-text"><span class="diff-prefix">{prefijo}</span>{codigo_html}</span>
-        </div>"""
+        editor_lineas += (
+            f'<div class="vscode-row {clase_linea}">'
+            f'<span class="vscode-linenr">{line_num}</span>'
+            f'<span class="vscode-code-text"><span class="diff-prefix">{prefijo}</span>{codigo_html}</span>'
+            f'</div>'
+        )
         line_num += 1
 
-    texto_copiar_escapado = texto_copiar.replace('`', '\\`').replace('$', '\\$')
+    texto_copiar_escapado = texto_copiar.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$').replace('\n', '\\n')
 
     plantilla_html = """<!DOCTYPE html>
 <html lang="es">
@@ -260,140 +262,5 @@ def generar_html(event_data):
         .vscode-dot { width: 12px; height: 12px; border-radius: 50%; }
         .dot-red { background-color: #ff5f56; }
         .dot-yellow { background-color: #ffbd2e; }
-        .dot-green { background-color: #27c93f; }
-
-        .vscode-body { display: flex; height: 480px; background-color: var(--codely-bg); }
-        .vscode-sidebar { width: 240px; background-color: var(--codely-sidebar); border-right: 1px solid var(--codely-border); overflow-y: auto; font-size: 12px; color: #a0a8b0; }
-        .vscode-sidebar-title { padding: 10px 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; color: var(--codely-accent); letter-spacing: 0.8px; }
-        .vscode-explorer-item { display: block; padding: 6px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: #a0a8b0; text-decoration: none; }
-        .vscode-explorer-item:hover { background-color: #25292b; color: #ffffff; }
-        .vscode-explorer-item.active-file { background-color: #2c3235; color: #ffffff; border-left: 2px solid var(--codely-accent); }
-
-        .vscode-main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background-color: var(--codely-bg); }
-        .vscode-tabs { background-color: var(--codely-titlebar); display: flex; border-bottom: 1px solid var(--codely-border); justify-content: space-between; align-items: center; padding-right: 15px; }
-        .vscode-tab { background-color: var(--codely-bg); color: #ffffff; padding: 8px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; border-top: 2px solid var(--codely-accent); border-right: 1px solid var(--codely-border); font-family: Consolas, monospace; }
-
-        .vscode-editor { flex: 1; overflow: auto; font-family: Consolas, "Courier New", monospace; font-size: 12px; padding: 10px 0; background-color: var(--codely-bg); }
-        .vscode-row { display: flex; width: 100%; line-height: 20px; }
-        .vscode-linenr { width: 45px; color: #4f5b66; text-align: right; padding-right: 15px; user-select: none; font-size: 11px; }
-        .vscode-code-text { white-space: pre; flex: 1; color: var(--codely-text); }
-
-        .tok-keyword { color: var(--codely-keyword); font-weight: bold; }
-        .tok-comment { color: var(--codely-comment); font-style: italic; }
-        .tok-variable { color: var(--codely-variable); }
-        .diff-prefix { display: inline-block; width: 15px; font-weight: bold; text-align: center; }
-
-        .line-added { background-color: rgba(153, 204, 153, 0.12); }
-        .line-added .vscode-code-text { color: var(--codely-added); }
-        .line-removed { background-color: rgba(191, 97, 106, 0.12); }
-        .line-removed .vscode-code-text { color: var(--codely-removed); text-decoration: line-through; opacity: 0.8; }
-        .line-chunk { color: #88c0d0; font-weight: bold; background-color: rgba(136, 192, 208, 0.1); }
-
-        footer { text-align: center; font-size: 12px; color: var(--codely-comment); margin-top: 30px; }
-    </style>
-</head>
-<body>
-    <h1>⚡ REPO_NAME_PLACEHOLDER - Workspace Dashboard</h1>
-    <p style="color: var(--codely-accent);">Generado el <b>FECHA_ACTUAL_PLACEHOLDER</b></p>
-
-    <div class="metrics-grid">
-        <div class="metric-box">
-            <h3>Organización</h3>
-            <p>🏢 ORG_OWNER_PLACEHOLDER</p>
-        </div>
-        <div class="metric-box">
-            <h3>Repositorio</h3>
-            <p>📦 REPO_NAME_PLACEHOLDER</p>
-        </div>
-        <div class="metric-box">
-            <h3>Autor</h3>
-            <p>👤 AUTOR_COMMIT_PLACEHOLDER</p>
-            <span style="font-size: 11px; color: var(--codely-comment);">EMAIL_COMMIT_PLACEHOLDER</span>
-        </div>
-        <div class="metric-box">
-            <h3>Último Commit</h3>
-            <p><a href="REPO_URL_PLACEHOLDER/commit/HASH_COMMIT_PLACEHOLDER" target="_blank" class="hash-link"><code>HASH_COMMIT_PLACEHOLDER</code></a></p>
-            <span style="font-size: 11px; color: var(--codely-accent);">MENSAJE_COMMIT_PLACEHOLDER</span>
-        </div>
-    </div>
-
-    <!-- 1. Resumen y Sugerencia de Commit con Botón de Copiar -->
-    <div class="section-box">
-        <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
-        <div class="ai-summary-box">
-            <p>DESCRIPCION_CAMBIOS_PLACEHOLDER</p>
-            <div><b>Título de Commit Estándar Sugerido:</b></div>
-            <div class="conventional-header">
-                <div class="conventional-tag" id="commit-title">COMMIT_SUGERIDO_PLACEHOLDER</div>
-                <button class="btn-copy" onclick="copiarCommit()">📋 Copiar Commit</button>
-            </div>
-            CUERPO_PIE_COMMIT_PLACEHOLDER
-        </div>
-    </div>
-
-    <!-- 2. Visor de Cambios en Código con Badges (+344 / -1) -->
-    <div class="section-box">
-        <h2>💻 Visor de Cambios en Código</h2>
-        
-        <div class="vscode-window">
-            <div class="vscode-titlebar">
-                <div class="vscode-dots">
-                    <div class="vscode-dot dot-red"></div>
-                    <div class="vscode-dot dot-yellow"></div>
-                    <div class="vscode-dot dot-green"></div>
-                </div>
-                <span>REPO_NAME_PLACEHOLDER — Workspace Viewer</span>
-                <span style="font-size: 11px; color: var(--codely-comment);">UTF-8 | Changes</span>
-            </div>
-            
-            <div class="vscode-body">
-                <div class="vscode-sidebar">
-                    <div class="vscode-sidebar-title">📁 Explorer</div>
-                    EXPLORER_HTML_PLACEHOLDER
-                </div>
-                
-                <div class="vscode-main-area">
-                    <div class="vscode-tabs">
-                        <div class="vscode-tab">📄 ARCHIVO_PRINCIPAL_PLACEHOLDER (Changes)</div>
-                        <div class="diff-stats">
-                            <span class="stat-added">+AGREGADAS_PLACEHOLDER</span>
-                            <span class="stat-removed">-ELIMINADAS_PLACEHOLDER</span>
-                        </div>
-                    </div>
-                    <div class="vscode-editor">
-                        EDITOR_LINEAS_PLACEHOLDER
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. Changelog con Buscador en Tiempo Real -->
-    <div class="section-box">
-        <h2>📜 Changelog Reciente (Historial)</h2>
-        <div class="search-container">
-            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar por hash, mensaje o autor..." onkeyup="filtrarCommits()">
-        </div>
-        <table id="changelogTable">
-            <thead>
-                <tr>
-                    <th>Hash</th>
-                    <th>Mensaje</th>
-                    <th>Autor</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody>
-                CHANGELOG_HTML_PLACEHOLDER
-            </tbody>
-        </table>
-    </div>
-
-    <footer>
-        <p>Pipeline automatizado con Python y GitHub Actions.</p>
-    </footer>
-
-    <script>
-        function copiarCommit() {
-            const texto = `TEXTO_COPIAR_PLACEHOLDER`;
-            navigator.clipboard.writeText(texto).then(() =
+        .dot-green { background-color
+    
