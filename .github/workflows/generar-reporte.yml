@@ -9,6 +9,11 @@ permissions:
   pages: write
   id-token: write
 
+# Permite una única ejecución simultánea de despliegue
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -28,6 +33,9 @@ jobs:
         run: |
           git config --global user.name "Workspace Agent"
           git config --global user.email "automation@github.com"
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v4
 
       - name: Asegurar directorio public y ejecutar analizador
         run: |
