@@ -202,13 +202,13 @@ def generar_html(event_data):
 
     texto_copiar_escapado = texto_copiar.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$').replace('\n', '\\n')
 
-    plantilla_html = """<!DOCTYPE html>
+    html_content = f"""<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>REPO_NAME_PLACEHOLDER - Workspace Dashboard</title>
+    <title>{repo_name} - Workspace Dashboard</title>
     <style>
-        :root {
+        :root {{
             --codely-bg: #151718;
             --codely-sidebar: #1b1e1f;
             --codely-titlebar: #111314;
@@ -221,46 +221,28 @@ def generar_html(event_data):
             --codely-variable: #f8c555;
             --codely-added: #a3be8c;
             --codely-removed: #bf616a;
-        }
-
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: var(--codely-text); max-width: 1150px; margin: 20px auto; padding: 0 15px; background: var(--codely-bg); }
-        h1, h2 { color: #ffffff; border-bottom: 1px solid var(--codely-border); padding-bottom: .3em; }
-        
-        .section-box { background: var(--codely-sidebar); border: 1px solid var(--codely-border); border-radius: 6px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-        
-        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .metric-box { background: #1f2324; border: 1px solid var(--codely-border); border-radius: 6px; padding: 15px; }
-        .metric-box h3 { margin: 0 0 8px 0; font-size: 11px; color: var(--codely-accent); border: none; text-transform: uppercase; letter-spacing: 1px; }
-        .metric-box p { margin: 0; font-size: 15px; font-weight: bold; color: #ffffff; word-break: break-all; }
-
-        table { width: 100%; border-collapse: collapse; font-size: 13px; color: var(--codely-text); }
-        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--codely-border); }
-        th { background-color: #1a1d1e; color: var(--codely-accent); }
-        tr:hover { background-color: #222628; }
-
-        .hash-link { color: var(--codely-accent); text-decoration: none; font-weight: bold; }
-        .hash-link:hover { text-decoration: underline; }
-
-        .ai-summary-box { background: #1a1d1e; border-left: 4px solid var(--codely-accent); padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; position: relative; }
-        .conventional-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .conventional-tag { display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 6px 12px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; border: 1px solid #3c4245; }
-        
-        .btn-copy { background: var(--codely-accent); color: #111314; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; transition: opacity 0.2s; }
-        .btn-copy:hover { opacity: 0.85; }
-
-        .diff-stats { display: inline-flex; gap: 8px; font-family: Consolas, monospace; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #111314; border: 1px solid var(--codely-border); }
-        .stat-added { color: var(--codely-added); }
-        .stat-removed { color: var(--codely-removed); }
-
-        .search-container { margin-bottom: 15px; }
-        .search-input { width: 100%; padding: 8px 12px; background: #111314; border: 1px solid var(--codely-border); border-radius: 4px; color: var(--codely-text); font-size: 13px; box-sizing: border-box; }
-        .search-input:focus { outline: 1px solid var(--codely-accent); }
-
-        .vscode-window { background-color: var(--codely-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--codely-border); box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-top: 15px; }
-        .vscode-titlebar { background-color: var(--codely-titlebar); color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--codely-border); }
-        .vscode-dots { display: flex; gap: 6px; }
-        .vscode-dot { width: 12px; height: 12px; border-radius: 50%; }
-        .dot-red { background-color: #ff5f56; }
-        .dot-yellow { background-color: #ffbd2e; }
-        .dot-green { background-color
+        }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: var(--codely-text); max-width: 1150px; margin: 20px auto; padding: 0 15px; background: var(--codely-bg); }}
+        h1, h2 {{ color: #ffffff; border-bottom: 1px solid var(--codely-border); padding-bottom: .3em; }}
+        .section-box {{ background: var(--codely-sidebar); border: 1px solid var(--codely-border); border-radius: 6px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }}
+        .metrics-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }}
+        .metric-box {{ background: #1f2324; border: 1px solid var(--codely-border); border-radius: 6px; padding: 15px; }}
+        .metric-box h3 {{ margin: 0 0 8px 0; font-size: 11px; color: var(--codely-accent); border: none; text-transform: uppercase; letter-spacing: 1px; }}
+        .metric-box p {{ margin: 0; font-size: 15px; font-weight: bold; color: #ffffff; word-break: break-all; }}
+        table {{ width: 100%; border-collapse: collapse; font-size: 13px; color: var(--codely-text); }}
+        th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--codely-border); }}
+        th {{ background-color: #1a1d1e; color: var(--codely-accent); }}
+        tr:hover {{ background-color: #222628; }}
+        .hash-link {{ color: var(--codely-accent); text-decoration: none; font-weight: bold; }}
+        .hash-link:hover {{ text-decoration: underline; }}
+        .ai-summary-box {{ background: #1a1d1e; border-left: 4px solid var(--codely-accent); padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; position: relative; }}
+        .conventional-header {{ display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; }}
+        .conventional-tag {{ display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 6px 12px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; border: 1px solid #3c4245; }}
+        .btn-copy {{ background: var(--codely-accent); color: #111314; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; transition: opacity 0.2s; }}
+        .btn-copy:hover {{ opacity: 0.85; }}
+        .diff-stats {{ display: inline-flex; gap: 8px; font-family: Consolas, monospace; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #111314; border: 1px solid var(--codely-border); }}
+        .stat-added {{ color: var(--codely-added); }}
+        .stat-removed {{ color: var(--codely-removed); }}
+        .search-container {{ margin-bottom: 15px; }}
+        .search-input {{ width: 10
     
