@@ -96,8 +96,13 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
         f"Los ajustes se centran en mejorar la estructura visual, la presentación de datos y la automatización del workspace."
     )
 
+    cuerpo_texto = (
+        "* Actualiza los componentes y la estructura del proyecto en el workspace.\n"
+        "* Optimiza la presentación visual y el flujo automatizado de reportes."
+    )
+
     cuerpo_pie_commit = f"""
-    <div style="margin-top: 12px; font-size: 13px; font-family: Consolas, monospace; background: #111314; padding: 10px; border-radius: 4px; border: 1px solid #282c2e;">
+    <div style="margin-top: 12px; font-size: 13px; font-family: Consolas, monospace; background: #111314; padding: 12px; border-radius: 4px; border: 1px solid #282c2e; position: relative;">
         <span style="color: #d8dee9;">* Actualiza los componentes y la estructura del proyecto en el workspace.</span><br>
         <span style="color: #d8dee9;">* Optimiza la presentación visual y el flujo automatizado de reportes.</span><br><br>
         <span style="color: #65737e;">Ref: Workspace Automation & Dashboard</span><br>
@@ -105,7 +110,9 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
     </div>
     """
 
-    return commit_sugerido, texto_resumen, cuerpo_pie_commit
+    texto_para_copiar = f"{commit_sugerido}\n\n{cuerpo_texto}"
+
+    return commit_sugerido, texto_resumen, cuerpo_pie_commit, lineas_agregadas, lineas_eliminadas, texto_para_copiar
 
 def colorear_sintaxis_codely(linea):
     linea_escaped = html_mod.escape(linea)
@@ -132,7 +139,7 @@ def colorear_sintaxis_codely(linea):
     return prefijo, linea_formateada
 
 def generar_html(event_data):
-    full_repo = os.getenv('GITHUB_REPOSITORY', 'usuario/repositorio')
+    full_repo = os.getenv('GITHUB_REPOSITORY', 'aabadmo4/proyect_report')
     if '/' in full_repo:
         org_owner, repo_name = full_repo.split('/', 1)
     else:
@@ -146,24 +153,28 @@ def generar_html(event_data):
         'hash': 'N/A', 'author': actor, 'email': 'N/A', 'date': fecha_actual, 'message': 'Sin commits'
     }
 
+    repo_url = f"https://github.com/{full_repo}"
+
     changelog_html = ""
     for c in historial_commits:
+        commit_link = f"{repo_url}/commit/{c['hash']}"
         changelog_html += f"""
-        <tr>
-            <td><code>{c['hash']}</code></td>
-            <td><b>{c['message']}</b></td>
-            <td>{c['author']}</td>
+        <tr class="changelog-row">
+            <td><a href="{commit_link}" target="_blank" class="hash-link"><code>{c['hash']}</code></a></td>
+            <td class="msg-cell"><b>{c['message']}</b></td>
+            <td class="author-cell">{c['author']}</td>
             <td style="font-size: 11px; color: #858585;">{c['date']}</td>
         </tr>
         """
 
     lista_archivos, archivo_principal, diff_contenido = obtener_archivos_y_diff()
-    commit_sugerido, descripcion_cambios, cuerpo_pie_commit = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
+    commit_sugerido, descripcion_cambios, cuerpo_pie_commit, agregadas, eliminadas, texto_copiar = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
 
     explorer_html = ""
     for f in lista_archivos[:25]:
         activo_class = "active-file" if f == archivo_principal else ""
-        explorer_html += f'<div class="vscode-explorer-item {activo_class}">📄 {f}</div>'
+        file_url = f"{repo_url}/blob/main/{f}"
+        explorer_html += f'<a href="{file_url}" target="_blank" class="vscode-explorer-item {activo_class}">📄 {f}</a>'
 
     editor_lineas = ""
     line_num = 1
@@ -204,6 +215,8 @@ def generar_html(event_data):
             --codely-string: #99cc99;
             --codely-comment: #65737e;
             --codely-variable: #f8c555;
+            --codely-added: #a3be8c;
+            --codely-removed: #bf616a;
         }}
 
         body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: var(--codely-text); max-width: 1150px; margin: 20px auto; padding: 0 15px; background: var(--codely-bg); }}
@@ -221,8 +234,23 @@ def generar_html(event_data):
         th {{ background-color: #1a1d1e; color: var(--codely-accent); }}
         tr:hover {{ background-color: #222628; }}
 
-        .ai-summary-box {{ background: #1a1d1e; border-left: 4px solid var(--codely-accent); padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }}
-        .conventional-tag {{ display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 4px 8px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; margin-top: 8px; border: 1px solid #3c4245; }}
+        .hash-link {{ color: var(--codely-accent); text-decoration: none; font-weight: bold; }}
+        .hash-link:hover {{ text-decoration: underline; }}
+
+        .ai-summary-box {{ background: #1a1d1e; border-left: 4px solid var(--codely-accent); padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; position: relative; }}
+        .conventional-header {{ display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; }}
+        .conventional-tag {{ display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 6px 12px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; border: 1px solid #3c4245; }}
+        
+        .btn-copy {{ background: var(--codely-accent); color: #111314; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; transition: opacity 0.2s; }}
+        .btn-copy:hover {{ opacity: 0.85; }}
+
+        .diff-stats {{ display: inline-flex; gap: 8px; font-family: Consolas, monospace; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #111314; border: 1px solid var(--codely-border); }}
+        .stat-added {{ color: var(--codely-added); }}
+        .stat-removed {{ color: var(--codely-removed); }}
+
+        .search-container {{ margin-bottom: 15px; }}
+        .search-input {{ width: 100%; padding: 8px 12px; background: #111314; border: 1px solid var(--codely-border); border-radius: 4px; color: var(--codely-text); font-size: 13px; box-sizing: border-box; }}
+        .search-input:focus {{ outline: 1px solid var(--codely-accent); }}
 
         .vscode-window {{ background-color: var(--codely-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--codely-border); box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-top: 15px; }}
         .vscode-titlebar {{ background-color: var(--codely-titlebar); color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--codely-border); }}
@@ -235,12 +263,12 @@ def generar_html(event_data):
         .vscode-body {{ display: flex; height: 480px; background-color: var(--codely-bg); }}
         .vscode-sidebar {{ width: 240px; background-color: var(--codely-sidebar); border-right: 1px solid var(--codely-border); overflow-y: auto; font-size: 12px; color: #a0a8b0; }}
         .vscode-sidebar-title {{ padding: 10px 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; color: var(--codely-accent); letter-spacing: 0.8px; }}
-        .vscode-explorer-item {{ padding: 6px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }}
+        .vscode-explorer-item {{ display: block; padding: 6px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: #a0a8b0; text-decoration: none; }}
         .vscode-explorer-item:hover {{ background-color: #25292b; color: #ffffff; }}
         .vscode-explorer-item.active-file {{ background-color: #2c3235; color: #ffffff; border-left: 2px solid var(--codely-accent); }}
 
         .vscode-main-area {{ flex: 1; display: flex; flex-direction: column; overflow: hidden; background-color: var(--codely-bg); }}
-        .vscode-tabs {{ background-color: var(--codely-titlebar); display: flex; border-bottom: 1px solid var(--codely-border); }}
+        .vscode-tabs {{ background-color: var(--codely-titlebar); display: flex; border-bottom: 1px solid var(--codely-border); justify-content: space-between; align-items: center; padding-right: 15px; }}
         .vscode-tab {{ background-color: var(--codely-bg); color: #ffffff; padding: 8px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; border-top: 2px solid var(--codely-accent); border-right: 1px solid var(--codely-border); font-family: Consolas, monospace; }}
 
         .vscode-editor {{ flex: 1; overflow: auto; font-family: Consolas, "Courier New", monospace; font-size: 12px; padding: 10px 0; background-color: var(--codely-bg); }}
@@ -254,9 +282,9 @@ def generar_html(event_data):
         .diff-prefix {{ display: inline-block; width: 15px; font-weight: bold; text-align: center; }}
 
         .line-added {{ background-color: rgba(153, 204, 153, 0.12); }}
-        .line-added .vscode-code-text {{ color: #a3be8c; }}
+        .line-added .vscode-code-text {{ color: var(--codely-added); }}
         .line-removed {{ background-color: rgba(191, 97, 106, 0.12); }}
-        .line-removed .vscode-code-text {{ color: #bf616a; text-decoration: line-through; opacity: 0.8; }}
+        .line-removed .vscode-code-text {{ color: var(--codely-removed); text-decoration: line-through; opacity: 0.8; }}
         .line-chunk {{ color: #88c0d0; font-weight: bold; background-color: rgba(136, 192, 208, 0.1); }}
 
         footer {{ text-align: center; font-size: 12px; color: var(--codely-comment); margin-top: 30px; }}
@@ -282,23 +310,26 @@ def generar_html(event_data):
         </div>
         <div class="metric-box">
             <h3>Último Commit</h3>
-            <p><code>{hash_commit}</code></p>
+            <p><a href="{repo_url}/commit/{hash_commit}" target="_blank" class="hash-link"><code>{hash_commit}</code></a></p>
             <span style="font-size: 11px; color: var(--codely-accent);">{mensaje_commit}</span>
         </div>
     </div>
 
-    <!-- 1. Resumen y Sugerencia de Commit -->
+    <!-- 1. Resumen y Sugerencia de Commit con Botón de Copiar -->
     <div class="section-box">
         <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
         <div class="ai-summary-box">
             <p>{descripcion_cambios}</p>
             <div><b>Título de Commit Estándar Sugerido:</b></div>
-            <div class="conventional-tag">{commit_sugerido}</div>
+            <div class="conventional-header">
+                <div class="conventional-tag" id="commit-title">{commit_sugerido}</div>
+                <button class="btn-copy" onclick="copiarCommit()">📋 Copiar Commit</button>
+            </div>
             {cuerpo_pie_commit}
         </div>
     </div>
 
-    <!-- 2. Visor de Cambios en Código -->
+    <!-- 2. Visor de Cambios en Código con Badges (+344 / -1) -->
     <div class="section-box">
         <h2>💻 Visor de Cambios en Código</h2>
         
@@ -322,6 +353,10 @@ def generar_html(event_data):
                 <div class="vscode-main-area">
                     <div class="vscode-tabs">
                         <div class="vscode-tab">📄 {archivo_principal} (Changes)</div>
+                        <div class="diff-stats">
+                            <span class="stat-added">+{agregadas}</span>
+                            <span class="stat-removed">-{eliminadas}</span>
+                        </div>
                     </div>
                     <div class="vscode-editor">
                         {editor_lineas}
@@ -331,10 +366,13 @@ def generar_html(event_data):
         </div>
     </div>
 
-    <!-- 3. Changelog (Historial) -->
+    <!-- 3. Changelog con Buscador en Tiempo Real -->
     <div class="section-box">
         <h2>📜 Changelog Reciente (Historial)</h2>
-        <table>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar por hash, mensaje o autor..." onkeyup="filtrarCommits()">
+        </div>
+        <table id="changelogTable">
             <thead>
                 <tr>
                     <th>Hash</th>
@@ -352,40 +390,11 @@ def generar_html(event_data):
     <footer>
         <p>Pipeline automatizado con Python y GitHub Actions.</p>
     </footer>
-</body>
-</html>
-"""
 
-    html_content = plantilla_html.format(
-        repo_name=repo_name,
-        fecha_actual=fecha_actual,
-        org_owner=org_owner,
-        autor_commit=commit_actual['author'],
-        email_commit=commit_actual['email'],
-        hash_commit=commit_actual['hash'],
-        mensaje_commit=commit_actual['message'],
-        commit_sugerido=commit_sugerido,
-        descripcion_cambios=descripcion_cambios,
-        cuerpo_pie_commit=cuerpo_pie_commit,
-        changelog_html=changelog_html,
-        explorer_html=explorer_html,
-        archivo_principal=archivo_principal,
-        editor_lineas=editor_lineas
-    )
-
-    # Cálculo dinámico de la raíz del repositorio para garantizar la ruta de la carpeta public
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
-    public_dir = os.path.join(repo_root, 'public')
-
-    os.makedirs(public_dir, exist_ok=True)
-    index_path = os.path.join(public_dir, 'index.html')
-
-    with open(index_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    print(f"¡Dashboard generado con éxito en: {index_path}!")
-
-if __name__ == '__main__':
-    datos = cargar_datos_evento()
-    generar_html(datos)
-    
+    <script>
+        function copiarCommit() {{
+            const texto = `{texto_copiar_escapado}`;
+            navigator.clipboard.writeText(texto).then(() => {{
+                const btn = document.querySelector('.btn-copy');
+                btn.textContent = '✅ ¡Copiado!';
+                setTimeout(() => btn.textContent = '📋 Copiar C
