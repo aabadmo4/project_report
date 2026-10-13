@@ -96,7 +96,18 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
         f"Los ajustes se centran en mejorar la estructura visual, la presentación de datos y la automatización del workspace."
     )
 
-    return commit_sugerido, texto_resumen
+    # Generamos un bloque de commit estructurado completo (Título, Cuerpo y Pie)
+    cuerpo_pie_commit = f"""
+    <div style="margin-top: 12px; font-size: 13px; font-family: Consolas, monospace; background: #111314; padding: 10px; border-radius: 4px; border: 1px solid #282c2e;">
+        <span style="color: #f38020;"><b>{commit_sugerido}</b></span><br><br>
+        <span style="color: #d8dee9;">* Actualiza las configuraciones y dependencias del flujo de trabajo en el pipeline.</span><br>
+        <span style="color: #d8dee9;">* Optimiza la ejecución y la compilación de reportes automáticos en GitHub Actions.</span><br><br>
+        <span style="color: #65737e;">Ref: CI/CD Pipeline Automation</span><br>
+        <span style="color: #65737e;">Signed-off-by: Workspace Agent &lt;automation@github.com&gt;</span>
+    </div>
+    """
+
+    return commit_sugerido, texto_resumen, cuerpo_pie_commit
 
 def colorear_sintaxis_codely(linea):
     linea_escaped = html_mod.escape(linea)
@@ -149,7 +160,7 @@ def generar_html(event_data):
         """
 
     lista_archivos, archivo_principal, diff_contenido = obtener_archivos_y_diff()
-    commit_sugerido, descripcion_cambios = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
+    commit_sugerido, descripcion_cambios, cuerpo_pie_commit = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
 
     explorer_html = ""
     for f in lista_archivos[:25]:
@@ -278,7 +289,18 @@ def generar_html(event_data):
         </div>
     </div>
 
-    <!-- 1. PRIMERO: Visor de Cambios en Código -->
+    <!-- 1. PRIMERO: Resumen y Sugerencia de Commit con Cuerpo y Pie -->
+    <div class="section-box">
+        <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
+        <div class="ai-summary-box">
+            <p>{descripcion_cambios}</p>
+            <div><b>Título de Commit Estándar Sugerido:</b></div>
+            <div class="conventional-tag">{commit_sugerido}</div>
+            {cuerpo_pie_commit}
+        </div>
+    </div>
+
+    <!-- 2. SEGUNDO: Visor de Cambios en Código -->
     <div class="section-box">
         <h2>💻 Visor de Cambios en Código</h2>
         
@@ -308,16 +330,6 @@ def generar_html(event_data):
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- 2. SEGUNDO: Resumen y sugerencia Conventional Commits -->
-    <div class="section-box">
-        <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
-        <div class="ai-summary-box">
-            <p>{descripcion_cambios}</p>
-            <div><b>Título de Commit Estándar Sugerido:</b></div>
-            <div class="conventional-tag">{commit_sugerido}</div>
         </div>
     </div>
 
@@ -356,6 +368,7 @@ def generar_html(event_data):
         mensaje_commit=commit_actual['message'],
         commit_sugerido=commit_sugerido,
         descripcion_cambios=descripcion_cambios,
+        cuerpo_pie_commit=cuerpo_pie_commit,
         changelog_html=changelog_html,
         explorer_html=explorer_html,
         archivo_principal=archivo_principal,
@@ -370,4 +383,4 @@ def generar_html(event_data):
 if __name__ == '__main__':
     datos = cargar_datos_evento()
     generar_html(datos)
-        
+    
