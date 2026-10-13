@@ -139,7 +139,7 @@ def colorear_sintaxis_codely(linea):
     return prefijo, linea_formateada
 
 def generar_html(event_data):
-    full_repo = os.getenv('GITHUB_REPOSITORY', 'aabadmo4/proyect_report')
+    full_repo = os.getenv('GITHUB_REPOSITORY', 'aabadmo4/project_report')
     if '/' in full_repo:
         org_owner, repo_name = full_repo.split('/', 1)
     else:
@@ -198,13 +198,15 @@ def generar_html(event_data):
         </div>"""
         line_num += 1
 
+    texto_copiar_escapado = texto_copiar.replace('`', '\\`').replace('$', '\\$')
+
     plantilla_html = """<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{repo_name} - Workspace Dashboard</title>
+    <title>REPO_NAME_PLACEHOLDER - Workspace Dashboard</title>
     <style>
-        :root {{
+        :root {
             --codely-bg: #151718;
             --codely-sidebar: #1b1e1f;
             --codely-titlebar: #111314;
@@ -217,101 +219,101 @@ def generar_html(event_data):
             --codely-variable: #f8c555;
             --codely-added: #a3be8c;
             --codely-removed: #bf616a;
-        }}
+        }
 
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: var(--codely-text); max-width: 1150px; margin: 20px auto; padding: 0 15px; background: var(--codely-bg); }}
-        h1, h2 {{ color: #ffffff; border-bottom: 1px solid var(--codely-border); padding-bottom: .3em; }}
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: var(--codely-text); max-width: 1150px; margin: 20px auto; padding: 0 15px; background: var(--codely-bg); }
+        h1, h2 { color: #ffffff; border-bottom: 1px solid var(--codely-border); padding-bottom: .3em; }
         
-        .section-box {{ background: var(--codely-sidebar); border: 1px solid var(--codely-border); border-radius: 6px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }}
+        .section-box { background: var(--codely-sidebar); border: 1px solid var(--codely-border); border-radius: 6px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
         
-        .metrics-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }}
-        .metric-box {{ background: #1f2324; border: 1px solid var(--codely-border); border-radius: 6px; padding: 15px; }}
-        .metric-box h3 {{ margin: 0 0 8px 0; font-size: 11px; color: var(--codely-accent); border: none; text-transform: uppercase; letter-spacing: 1px; }}
-        .metric-box p {{ margin: 0; font-size: 15px; font-weight: bold; color: #ffffff; word-break: break-all; }}
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .metric-box { background: #1f2324; border: 1px solid var(--codely-border); border-radius: 6px; padding: 15px; }
+        .metric-box h3 { margin: 0 0 8px 0; font-size: 11px; color: var(--codely-accent); border: none; text-transform: uppercase; letter-spacing: 1px; }
+        .metric-box p { margin: 0; font-size: 15px; font-weight: bold; color: #ffffff; word-break: break-all; }
 
-        table {{ width: 100%; border-collapse: collapse; font-size: 13px; color: var(--codely-text); }}
-        th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--codely-border); }}
-        th {{ background-color: #1a1d1e; color: var(--codely-accent); }}
-        tr:hover {{ background-color: #222628; }}
+        table { width: 100%; border-collapse: collapse; font-size: 13px; color: var(--codely-text); }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--codely-border); }
+        th { background-color: #1a1d1e; color: var(--codely-accent); }
+        tr:hover { background-color: #222628; }
 
-        .hash-link {{ color: var(--codely-accent); text-decoration: none; font-weight: bold; }}
-        .hash-link:hover {{ text-decoration: underline; }}
+        .hash-link { color: var(--codely-accent); text-decoration: none; font-weight: bold; }
+        .hash-link:hover { text-decoration: underline; }
 
-        .ai-summary-box {{ background: #1a1d1e; border-left: 4px solid var(--codely-accent); padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; position: relative; }}
-        .conventional-header {{ display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; }}
-        .conventional-tag {{ display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 6px 12px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; border: 1px solid #3c4245; }}
+        .ai-summary-box { background: #1a1d1e; border-left: 4px solid var(--codely-accent); padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; position: relative; }
+        .conventional-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .conventional-tag { display: inline-block; background: #282c2e; color: var(--codely-accent); padding: 6px 12px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; border: 1px solid #3c4245; }
         
-        .btn-copy {{ background: var(--codely-accent); color: #111314; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; transition: opacity 0.2s; }}
-        .btn-copy:hover {{ opacity: 0.85; }}
+        .btn-copy { background: var(--codely-accent); color: #111314; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; transition: opacity 0.2s; }
+        .btn-copy:hover { opacity: 0.85; }
 
-        .diff-stats {{ display: inline-flex; gap: 8px; font-family: Consolas, monospace; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #111314; border: 1px solid var(--codely-border); }}
-        .stat-added {{ color: var(--codely-added); }}
-        .stat-removed {{ color: var(--codely-removed); }}
+        .diff-stats { display: inline-flex; gap: 8px; font-family: Consolas, monospace; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #111314; border: 1px solid var(--codely-border); }
+        .stat-added { color: var(--codely-added); }
+        .stat-removed { color: var(--codely-removed); }
 
-        .search-container {{ margin-bottom: 15px; }}
-        .search-input {{ width: 100%; padding: 8px 12px; background: #111314; border: 1px solid var(--codely-border); border-radius: 4px; color: var(--codely-text); font-size: 13px; box-sizing: border-box; }}
-        .search-input:focus {{ outline: 1px solid var(--codely-accent); }}
+        .search-container { margin-bottom: 15px; }
+        .search-input { width: 100%; padding: 8px 12px; background: #111314; border: 1px solid var(--codely-border); border-radius: 4px; color: var(--codely-text); font-size: 13px; box-sizing: border-box; }
+        .search-input:focus { outline: 1px solid var(--codely-accent); }
 
-        .vscode-window {{ background-color: var(--codely-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--codely-border); box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-top: 15px; }}
-        .vscode-titlebar {{ background-color: var(--codely-titlebar); color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--codely-border); }}
-        .vscode-dots {{ display: flex; gap: 6px; }}
-        .vscode-dot {{ width: 12px; height: 12px; border-radius: 50%; }}
-        .dot-red {{ background-color: #ff5f56; }}
-        .dot-yellow {{ background-color: #ffbd2e; }}
-        .dot-green {{ background-color: #27c93f; }}
+        .vscode-window { background-color: var(--codely-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--codely-border); box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-top: 15px; }
+        .vscode-titlebar { background-color: var(--codely-titlebar); color: #cccccc; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--codely-border); }
+        .vscode-dots { display: flex; gap: 6px; }
+        .vscode-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot-red { background-color: #ff5f56; }
+        .dot-yellow { background-color: #ffbd2e; }
+        .dot-green { background-color: #27c93f; }
 
-        .vscode-body {{ display: flex; height: 480px; background-color: var(--codely-bg); }}
-        .vscode-sidebar {{ width: 240px; background-color: var(--codely-sidebar); border-right: 1px solid var(--codely-border); overflow-y: auto; font-size: 12px; color: #a0a8b0; }}
-        .vscode-sidebar-title {{ padding: 10px 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; color: var(--codely-accent); letter-spacing: 0.8px; }}
-        .vscode-explorer-item {{ display: block; padding: 6px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: #a0a8b0; text-decoration: none; }}
-        .vscode-explorer-item:hover {{ background-color: #25292b; color: #ffffff; }}
-        .vscode-explorer-item.active-file {{ background-color: #2c3235; color: #ffffff; border-left: 2px solid var(--codely-accent); }}
+        .vscode-body { display: flex; height: 480px; background-color: var(--codely-bg); }
+        .vscode-sidebar { width: 240px; background-color: var(--codely-sidebar); border-right: 1px solid var(--codely-border); overflow-y: auto; font-size: 12px; color: #a0a8b0; }
+        .vscode-sidebar-title { padding: 10px 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; color: var(--codely-accent); letter-spacing: 0.8px; }
+        .vscode-explorer-item { display: block; padding: 6px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: #a0a8b0; text-decoration: none; }
+        .vscode-explorer-item:hover { background-color: #25292b; color: #ffffff; }
+        .vscode-explorer-item.active-file { background-color: #2c3235; color: #ffffff; border-left: 2px solid var(--codely-accent); }
 
-        .vscode-main-area {{ flex: 1; display: flex; flex-direction: column; overflow: hidden; background-color: var(--codely-bg); }}
-        .vscode-tabs {{ background-color: var(--codely-titlebar); display: flex; border-bottom: 1px solid var(--codely-border); justify-content: space-between; align-items: center; padding-right: 15px; }}
-        .vscode-tab {{ background-color: var(--codely-bg); color: #ffffff; padding: 8px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; border-top: 2px solid var(--codely-accent); border-right: 1px solid var(--codely-border); font-family: Consolas, monospace; }}
+        .vscode-main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background-color: var(--codely-bg); }
+        .vscode-tabs { background-color: var(--codely-titlebar); display: flex; border-bottom: 1px solid var(--codely-border); justify-content: space-between; align-items: center; padding-right: 15px; }
+        .vscode-tab { background-color: var(--codely-bg); color: #ffffff; padding: 8px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; border-top: 2px solid var(--codely-accent); border-right: 1px solid var(--codely-border); font-family: Consolas, monospace; }
 
-        .vscode-editor {{ flex: 1; overflow: auto; font-family: Consolas, "Courier New", monospace; font-size: 12px; padding: 10px 0; background-color: var(--codely-bg); }}
-        .vscode-row {{ display: flex; width: 100%; line-height: 20px; }}
-        .vscode-linenr {{ width: 45px; color: #4f5b66; text-align: right; padding-right: 15px; user-select: none; font-size: 11px; }}
-        .vscode-code-text {{ white-space: pre; flex: 1; color: var(--codely-text); }}
+        .vscode-editor { flex: 1; overflow: auto; font-family: Consolas, "Courier New", monospace; font-size: 12px; padding: 10px 0; background-color: var(--codely-bg); }
+        .vscode-row { display: flex; width: 100%; line-height: 20px; }
+        .vscode-linenr { width: 45px; color: #4f5b66; text-align: right; padding-right: 15px; user-select: none; font-size: 11px; }
+        .vscode-code-text { white-space: pre; flex: 1; color: var(--codely-text); }
 
-        .tok-keyword {{ color: var(--codely-keyword); font-weight: bold; }}
-        .tok-comment {{ color: var(--codely-comment); font-style: italic; }}
-        .tok-variable {{ color: var(--codely-variable); }}
-        .diff-prefix {{ display: inline-block; width: 15px; font-weight: bold; text-align: center; }}
+        .tok-keyword { color: var(--codely-keyword); font-weight: bold; }
+        .tok-comment { color: var(--codely-comment); font-style: italic; }
+        .tok-variable { color: var(--codely-variable); }
+        .diff-prefix { display: inline-block; width: 15px; font-weight: bold; text-align: center; }
 
-        .line-added {{ background-color: rgba(153, 204, 153, 0.12); }}
-        .line-added .vscode-code-text {{ color: var(--codely-added); }}
-        .line-removed {{ background-color: rgba(191, 97, 106, 0.12); }}
-        .line-removed .vscode-code-text {{ color: var(--codely-removed); text-decoration: line-through; opacity: 0.8; }}
-        .line-chunk {{ color: #88c0d0; font-weight: bold; background-color: rgba(136, 192, 208, 0.1); }}
+        .line-added { background-color: rgba(153, 204, 153, 0.12); }
+        .line-added .vscode-code-text { color: var(--codely-added); }
+        .line-removed { background-color: rgba(191, 97, 106, 0.12); }
+        .line-removed .vscode-code-text { color: var(--codely-removed); text-decoration: line-through; opacity: 0.8; }
+        .line-chunk { color: #88c0d0; font-weight: bold; background-color: rgba(136, 192, 208, 0.1); }
 
-        footer {{ text-align: center; font-size: 12px; color: var(--codely-comment); margin-top: 30px; }}
+        footer { text-align: center; font-size: 12px; color: var(--codely-comment); margin-top: 30px; }
     </style>
 </head>
 <body>
-    <h1>⚡ {repo_name} - Workspace Dashboard</h1>
-    <p style="color: var(--codely-accent);">Generado el <b>{fecha_actual}</b></p>
+    <h1>⚡ REPO_NAME_PLACEHOLDER - Workspace Dashboard</h1>
+    <p style="color: var(--codely-accent);">Generado el <b>FECHA_ACTUAL_PLACEHOLDER</b></p>
 
     <div class="metrics-grid">
         <div class="metric-box">
             <h3>Organización</h3>
-            <p>🏢 {org_owner}</p>
+            <p>🏢 ORG_OWNER_PLACEHOLDER</p>
         </div>
         <div class="metric-box">
             <h3>Repositorio</h3>
-            <p>📦 {repo_name}</p>
+            <p>📦 REPO_NAME_PLACEHOLDER</p>
         </div>
         <div class="metric-box">
             <h3>Autor</h3>
-            <p>👤 {autor_commit}</p>
-            <span style="font-size: 11px; color: var(--codely-comment);">{email_commit}</span>
+            <p>👤 AUTOR_COMMIT_PLACEHOLDER</p>
+            <span style="font-size: 11px; color: var(--codely-comment);">EMAIL_COMMIT_PLACEHOLDER</span>
         </div>
         <div class="metric-box">
             <h3>Último Commit</h3>
-            <p><a href="{repo_url}/commit/{hash_commit}" target="_blank" class="hash-link"><code>{hash_commit}</code></a></p>
-            <span style="font-size: 11px; color: var(--codely-accent);">{mensaje_commit}</span>
+            <p><a href="REPO_URL_PLACEHOLDER/commit/HASH_COMMIT_PLACEHOLDER" target="_blank" class="hash-link"><code>HASH_COMMIT_PLACEHOLDER</code></a></p>
+            <span style="font-size: 11px; color: var(--codely-accent);">MENSAJE_COMMIT_PLACEHOLDER</span>
         </div>
     </div>
 
@@ -319,13 +321,13 @@ def generar_html(event_data):
     <div class="section-box">
         <h2>📝 Resumen y Sugerencia de Commit (Conventional Commits)</h2>
         <div class="ai-summary-box">
-            <p>{descripcion_cambios}</p>
+            <p>DESCRIPCION_CAMBIOS_PLACEHOLDER</p>
             <div><b>Título de Commit Estándar Sugerido:</b></div>
             <div class="conventional-header">
-                <div class="conventional-tag" id="commit-title">{commit_sugerido}</div>
+                <div class="conventional-tag" id="commit-title">COMMIT_SUGERIDO_PLACEHOLDER</div>
                 <button class="btn-copy" onclick="copiarCommit()">📋 Copiar Commit</button>
             </div>
-            {cuerpo_pie_commit}
+            CUERPO_PIE_COMMIT_PLACEHOLDER
         </div>
     </div>
 
@@ -340,26 +342,26 @@ def generar_html(event_data):
                     <div class="vscode-dot dot-yellow"></div>
                     <div class="vscode-dot dot-green"></div>
                 </div>
-                <span>{repo_name} — Workspace Viewer</span>
+                <span>REPO_NAME_PLACEHOLDER — Workspace Viewer</span>
                 <span style="font-size: 11px; color: var(--codely-comment);">UTF-8 | Changes</span>
             </div>
             
             <div class="vscode-body">
                 <div class="vscode-sidebar">
                     <div class="vscode-sidebar-title">📁 Explorer</div>
-                    {explorer_html}
+                    EXPLORER_HTML_PLACEHOLDER
                 </div>
                 
                 <div class="vscode-main-area">
                     <div class="vscode-tabs">
-                        <div class="vscode-tab">📄 {archivo_principal} (Changes)</div>
+                        <div class="vscode-tab">📄 ARCHIVO_PRINCIPAL_PLACEHOLDER (Changes)</div>
                         <div class="diff-stats">
-                            <span class="stat-added">+{agregadas}</span>
-                            <span class="stat-removed">-{eliminadas}</span>
+                            <span class="stat-added">+AGREGADAS_PLACEHOLDER</span>
+                            <span class="stat-removed">-ELIMINADAS_PLACEHOLDER</span>
                         </div>
                     </div>
                     <div class="vscode-editor">
-                        {editor_lineas}
+                        EDITOR_LINEAS_PLACEHOLDER
                     </div>
                 </div>
             </div>
@@ -382,7 +384,7 @@ def generar_html(event_data):
                 </tr>
             </thead>
             <tbody>
-                {changelog_html}
+                CHANGELOG_HTML_PLACEHOLDER
             </tbody>
         </table>
     </div>
@@ -392,9 +394,6 @@ def generar_html(event_data):
     </footer>
 
     <script>
-        function copiarCommit() {{
-            const texto = `{texto_copiar_escapado}`;
-            navigator.clipboard.writeText(texto).then(() => {{
-                const btn = document.querySelector('.btn-copy');
-                btn.textContent = '✅ ¡Copiado!';
-                setTimeout(() => btn.textContent = '📋 Copiar C
+        function copiarCommit() {
+            const texto = `TEXTO_COPIAR_PLACEHOLDER`;
+            navigator.clipboard.writeText(texto).then(() =
