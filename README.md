@@ -1,12 +1,14 @@
 # ⚡ Proyect Report & Workspace Dashboard
 
-> Pipeline automatizado con Python y GitHub Actions que genera un dashboard interactivo al estilo **CodelyTV / VS Code** para visualizar la actividad del repositorio, diffs de código, sugerencias de Conventional Commits y un changelog detallado en GitHub Pages.
+![Estado de GitHub Actions](https://github.com/aabadmo4/proyect_report/actions/workflows/generar-reporte.yml/badge.svg)
+
+> Pipeline automatizado con Python y GitHub Actions que genera un dashboard interactivo al estilo **CodelyTV / VS Code** para visualizar la actividad del repositorio, diffs de código, sugerencias estructuradas de Conventional Commits y un changelog detallado en GitHub Pages.
 
 ---
 
 ## 🚀 Características Principales
 
-* **🤖 Sugerencia Inteligente de Commits**: Analiza automáticamente los cambios del último diff para sugerir un título, cuerpo y pie estructurados bajo el estándar de **Conventional Commits** (`feat`, `fix`, `refactor`, `style`, `ci`).
+* **🤖 Sugerencia Inteligente de Commits**: Analiza automáticamente los cambios del último diff para proponer un título bajo el estándar de **Conventional Commits** (`feat`, `fix`, `refactor`, `style`, `ci`), acompañado de un cuerpo y pie estructurados.
 * **💻 Visor de Código Estilo VS Code**: Interfaz oscura personalizada con barra lateral de explorador, pestañas y resaltado de sintaxis dinámico para inspeccionar los archivos modificados.
 * **📜 Changelog Reciente**: Tabla limpia y moderna con el historial de los últimos commits de la rama (hash, mensaje, autor y fecha).
 * **📊 Métricas Clave del Workspace**: Tarjetas informativas con detalles de la organización, repositorio, autor y último commit realizado.
