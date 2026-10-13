@@ -64,19 +64,37 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
     archivo_lower = archivo.lower()
     diff_lower = diff_texto.lower()
     
-    # Análisis contextual inteligente y preciso
+    # Análisis contextual inteligente y preciso con generación de cuerpo dinámico
     if 'analizador.py' in archivo_lower and ('amend' in diff_lower or 'commit' in diff_lower or 'push' in diff_lower):
         tipo, alcance, desc = "feat", "report", "implement automatic commit amendment feature"
+        cuerpo_generado = (
+            f"- Agrega la función de automatización `git commit --amend` y `git push --force` en <code>{archivo}</code>.\n"
+            "- Mejora el análisis contextual del diff para la selección inteligente de Conventional Commits."
+        )
     elif 'analizador.py' in archivo_lower:
         tipo, alcance, desc = "refactor", "report", "refactor script analytics and HTML layout generation"
+        cuerpo_generado = (
+            f"- Refactoriza la lógica de análisis y generación de reportes en <code>{archivo}</code>.\n"
+            "- Optimiza el flujo de procesamiento de métricas del workspace."
+        )
     elif 'workflow' in archivo_lower or '.github/workflows' in archivo_lower:
         tipo, alcance, desc = "ci", "actions", "update CI/CD pipeline workflow configuration"
+        cuerpo_generado = (
+            f"- Actualiza la configuración del pipeline de GitHub Actions en <code>{archivo}</code>.\n"
+            "- Ajusta permisos y pasos de despliegue continuo."
+        )
     elif 'template.html' in archivo_lower or 'style' in diff_lower or 'css' in diff_lower:
         tipo, alcance, desc = "style", "ui", "update styling and layout design"
-    elif 'fix' in diff_lower or 'error' in diff_lower or 'bug' in diff_lower:
-        tipo, alcance, desc = "fix", "core", "resolve minor bug or syntax issue"
+        cuerpo_generado = (
+            f"- Actualiza los estilos visuales y la estructura en <code>{archivo}</code>.\n"
+            "- Mejora la presentación y la experiencia visual del dashboard."
+        )
     else:
         tipo, alcance, desc = "feat", "app", "update codebase features and components"
+        cuerpo_generado = (
+            f"- Actualiza componentes clave en el archivo <code>{archivo}</code>.\n"
+            "- Optimiza la estructura general del proyecto en el workspace."
+        )
 
     commit_sugerido = f"{tipo}({alcance}): {desc}"
     agregadas = sum(1 for l in diff_texto.split('\n') if l.startswith('+') and not l.startswith('+++'))
@@ -87,12 +105,7 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
         f"El análisis detectó un total de <b>{agregadas} líneas añadidas</b> y <b>{eliminadas} líneas eliminadas</b>."
     )
 
-    cuerpo_generado = (
-        "* Actualiza los componentes y la estructura del proyecto en el workspace.\n"
-        "* Optimiza la presentación visual y el flujo automatizado de reportes."
-    )
-
-    texto_para_copiar = f"{commit_sugerido}\n\n{cuerpo_generado}"
+    texto_para_copiar = f"{commit_sugerido}\n\n" + cuerpo_generado.replace('<code>', '').replace('</code>', '')
 
     return commit_sugerido, cuerpo_generado, descripcion_cambios, agregadas, eliminadas, texto_para_copiar
 
