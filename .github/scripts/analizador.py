@@ -79,10 +79,48 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
     lineas_agregadas = sum(1 for l in diff_texto.split('\n') if l.startswith('+') and not l.startswith('+++'))
     lineas_eliminadas = sum(1 for l in diff_texto.split('\n') if l.startswith('-') and not l.startswith('---'))
     
-    texto_resumen = f"Se han modificado componentes clave en el archivo <code>{archivo}</code>. Detectadas <b>{lineas_agregadas} líneas añadidas</b> y <b>{lineas_eliminadas} eliminadas</b>."
-    texto_copiar = f"{commit_sugerido}\n\n* Actualiza componentes y estructura del proyecto."
+    descripcion_cambios = (
+        f"Se han modificado componentes clave en el archivo <code>{archivo}</code>. "
+        f"El análisis detectó un total de <b>{lineas_agregadas} líneas añadidas</b> y <b>{lineas_eliminadas} líneas eliminadas</b>. "
+        f"Los ajustes se centran en mejorar la estructura visual, la presentación de datos y la automatización del workspace."
+    )
 
-    return commit_sugerido, texto_resumen, lineas_agregadas, lineas_eliminadas, texto_copiar
+    cuerpo_pie_commit = (
+        '<div style="margin-top: 12px; font-size: 13px; font-family: Consolas, monospace; background: #111314; padding: 12px; border-radius: 4px; border: 1px solid #282c2e; position: relative;">'
+        '<span style="color: #d8dee9;">* Actualiza los componentes y la estructura del proyecto en el workspace.</span><br>'
+        '<span style="color: #d8dee9;">* Optimiza la presentación visual y el flujo automatizado de reportes.</span><br><br>'
+        '<span style="color: #65737e;">Ref: Workspace Automation & Dashboard</span><br>'
+        '<span style="color: #65737e;">Signed-off-by: Workspace Agent &lt;automation@github.com&gt;</span>'
+        '</div>'
+    )
+
+    texto_para_copiar = f"{commit_sugerido}\n\n* Actualiza los componentes y la estructura del proyecto en el workspace.\n* Optimiza la presentación visual y el flujo automatizado de reportes."
+
+    return commit_sugerido, descripcion_cambios, cuerpo_pie_commit, lineas_agregadas, lineas_eliminadas, texto_para_copiar
+
+def colorear_sintaxis_codely(linea):
+    linea_escaped = html_mod.escape(linea)
+    prefijo = ""
+    if linea_escaped.startswith('+'):
+        prefijo = "+"
+        linea_escaped = linea_escaped[1:]
+    elif linea_escaped.startswith('-'):
+        prefijo = "-"
+        linea_escaped = linea_escaped[1:]
+
+    if linea_escaped.strip().startswith('#') or linea_escaped.strip().startswith('"""'):
+        linea_formateada = f'<span class="tok-comment">{linea_escaped}</span>'
+    else:
+        palabras_clave = ['def ', 'import ', 'return ', 'class ', 'try:', 'except', 'for ', 'in ', 'if ', 'with ', 'as ']
+        reemplazado = linea_escaped
+        for kw in palabras_clave:
+            reemplazado = reemplazado.replace(kw, f'<span class="tok-keyword">{kw}</span>')
+        
+        reemplazado = reemplazado.replace('os.', '<span class="tok-variable">os</span>.')
+        reemplazado = reemplazado.replace('subprocess.', '<span class="tok-variable">subprocess</span>.')
+        linea_formateada = reemplazado
+
+    return prefijo, linea_formateada
 
 def generar_html(event_data):
     full_repo = os.getenv('GITHUB_REPOSITORY', 'aabadmo4/project_report')
@@ -95,18 +133,44 @@ def generar_html(event_data):
     repo_url = f"https://github.com/{full_repo}"
 
     changelog_html = "".join([
-        f'<tr class="changelog-row"><td><a href="{repo_url}/commit/{c["hash"]}" target="_blank"><code>{c["hash"]}</code></a></td><td><b>{c["message"]}</b></td><td>{c["author"]}</td><td>{c["date"]}</td></tr>'
+        f'<tr class="changelog-row"><td><a href="{repo_url}/commit/{c["hash"]}" target="_blank" class="hash-link"><code>{c["hash"]}</code></a></td><td class="msg-cell"><b>{c["message"]}</b></td><td class="author-cell">{c["author"]}</td><td style="font-size: 11px; color: #858585;">{c["date"]}</td></tr>'
         for c in historial_commits
     ])
 
     lista_archivos, archivo_principal, diff_contenido = obtener_archivos_y_diff()
-    commit_sugerido, descripcion_cambios, agregadas, eliminadas, texto_copiar = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
+    commit_sugerido, descripcion_cambios, cuerpo_pie_commit, agregadas, eliminadas, texto_copiar = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
+
+    explorer_html = "".join([
+        f'<a href="{repo_url}/blob/main/{f}" target="_blank" class="vscode-explorer-item {"active-file" if f == archivo_principal else ""}">📄 {f}</a>'
+        for f in lista_archivos[:25]
+    ])
+
+    editor_lineas = ""
+    line_num = 1
+    for linea in diff_contenido.split('\n'):
+        if linea.startswith(('+++', '---', 'index', 'diff --git')):
+            continue
+        clase_linea = ""
+        if linea.startswith('+'):
+            clase_linea = "line-added"
+        elif linea.startswith('-'):
+            clase_linea = "line-removed"
+        elif linea.startswith('@@'):
+            clase_linea = "line-chunk"
+
+        prefijo, codigo_html = colorear_sintaxis_codely(linea)
+        editor_lineas += (
+            f'<div class="vscode-row {clase_linea}">'
+            f'<span class="vscode-linenr">{line_num}</span>'
+            f'<span class="vscode-code-text"><span class="diff-prefix">{prefijo}</span>{codigo_html}</span>'
+            f'</div>'
+        )
+        line_num += 1
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
     template_path = os.path.join(script_dir, 'template.html')
 
-    # Leer la plantilla HTML externa de manera limpia
     with open(template_path, 'r', encoding='utf-8') as f:
         plantilla = f.read()
 
@@ -121,15 +185,21 @@ def generar_html(event_data):
         repo_url=repo_url,
         descripcion_cambios=descripcion_cambios,
         commit_sugerido=commit_sugerido,
+        cuerpo_pie_commit=cuerpo_pie_commit,
+        explorer_html=explorer_html,
+        archivo_principal=archivo_principal,
+        agregadas=agregadas,
+        eliminadas=eliminadas,
+        editor_lineas=editor_lineas,
         changelog_html=changelog_html,
-        texto_copiar=texto_copiar.replace('"', '\\"')
+        texto_copiar=texto_copiar.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
     )
 
     public_dir = os.path.join(repo_root, 'public')
     os.makedirs(public_dir, exist_ok=True)
     with open(os.path.join(public_dir, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(html_content)
-    print("¡Dashboard generado con éxito desde plantilla externa!")
+    print("¡Dashboard completo generado con éxito desde plantilla externa!")
 
 if __name__ == '__main__':
     generar_html(cargar_datos_evento())
