@@ -76,12 +76,12 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
         tipo, alcance, desc = "feat", "app", "update codebase features and components"
 
     commit_sugerido = f"{tipo}({alcance}): {desc}"
-    lineas_agregadas = sum(1 for l in diff_texto.split('\n') if l.startswith('+') and not l.startswith('+++'))
-    lineas_eliminadas = sum(1 for l in diff_texto.split('\n') if l.startswith('-') and not l.startswith('---'))
+    agregadas = sum(1 for l in diff_texto.split('\n') if l.startswith('+') and not l.startswith('+++'))
+    eliminadas = sum(1 for l in diff_texto.split('\n') if l.startswith('-') and not l.startswith('---'))
     
     descripcion_cambios = (
         f"Se han modificado componentes clave en el archivo <code>{archivo}</code>. "
-        f"El análisis detectó un total de <b>{lineas_agregadas} líneas añadidas</b> y <b>{lineas_eliminadas} líneas eliminadas</b>."
+        f"El análisis detectó un total de <b>{agregadas} líneas añadidas</b> y <b>{eliminadas} líneas eliminadas</b>."
     )
 
     cuerpo_generado = (
@@ -135,69 +135,5 @@ def generar_html(event_data):
     ])
 
     lista_archivos, archivo_principal, diff_contenido = obtener_archivos_y_diff()
-    commit_sugerido, cuerpo_generado, descripcion_cambios, agregadas, eliminadas, texto_copiar = analizar_y_generar_conventional_commit(archivo_principal, diff_contenido)
-
-    explorer_html = "".join([
-        f'<a href="{repo_url}/blob/main/{f}" target="_blank" class="vscode-explorer-item {"active-file" if f == archivo_principal else ""}">📄 {f}</a>'
-        for f in lista_archivos[:25]
-    ])
-
-    editor_lineas = ""
-    line_num = 1
-    for linea in diff_contenido.split('\n'):
-        if linea.startswith(('+++', '---', 'index', 'diff --git')):
-            continue
-        clase_linea = ""
-        if linea.startswith('+'):
-            clase_linea = "line-added"
-        elif linea.startswith('-'):
-            clase_linea = "line-removed"
-        elif linea.startswith('@@'):
-            clase_linea = "line-chunk"
-
-        prefijo, codigo_html = colorear_sintaxis_codely(linea)
-        editor_lineas += (
-            f'<div class="vscode-row {clase_linea}">'
-            f'<span class="vscode-linenr">{line_num}</span>'
-            f'<span class="vscode-code-text"><span class="diff-prefix">{prefijo}</span>{codigo_html}</span>'
-            f'</div>'
-        )
-        line_num += 1
-
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
-    template_path = os.path.join(script_dir, 'template.html')
-
-    with open(template_path, 'r', encoding='utf-8') as f:
-        plantilla = f.read()
-
-    html_content = plantilla.format(
-        repo_name=repo_name,
-        org_owner=org_owner,
-        fecha_actual=fecha_actual,
-        autor=commit_actual['author'],
-        email=commit_actual['email'],
-        hash_c=commit_actual['hash'],
-        mensaje_original=mensaje_original,
-        repo_url=repo_url,
-        descripcion_cambios=descripcion_cambios,
-        commit_sugerido=commit_sugerido,
-        cuerpo_generado=cuerpo_generado,
-        explorer_html=explorer_html,
-        archivo_principal=archivo_principal,
-        agregadas=agregadas,
-        eliminadas=eliminadas,
-        editor_lineas=editor_lineas,
-        changelog_html=changelog_html,
-        texto_copiar=texto_copiar.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
-    )
-
-    public_dir = os.path.join(repo_root, 'public')
-    os.makedirs(public_dir, exist_ok=True)
-    with open(os.path.join(public_dir, 'index.html'), 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    print("¡Dashboard con comparativa de commits generado con éxito!")
-
-if __name__ == '__main__':
-    generar_html(cargar_datos_evento())
+    commit_sugerido, cuerpo_generado, descripcion_cambios, agregadas, elimin
     
