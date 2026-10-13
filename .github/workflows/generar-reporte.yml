@@ -29,15 +29,11 @@ jobs:
           git config --global user.name "Workspace Agent"
           git config --global user.email "automation@github.com"
 
-      - name: Ejecutar analizador y modificar commit (si aplica)
+      - name: Asegurar directorio public y ejecutar analizador
         run: |
+          mkdir -p public
           python .github/scripts/analizador.py
-          
-          # Si deseas que el script modifique automáticamente el último commit en base al análisis:
-          # (Asegúrate de que tu analizador guarde el commit sugerido en un archivo temporal o haz el amend aquí)
-          # git add .
-          # git commit --amend --no-edit
-          # git push origin HEAD:${{ github.ref_name }} --force
+          ls -la public/
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
