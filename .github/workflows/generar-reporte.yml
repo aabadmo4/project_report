@@ -1,43 +1,50 @@
-name: Generar y Publicar Reporte de Actividad
+name: Build and Deploy Workspace Dashboard
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    types: [ opened, synchronize, reopened, closed ]
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Clonar el repositorio
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Obligatorio para que Git pueda calcular los diffs y el log
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configurar Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Ejecutar script analizador en Python
+      - name: Configurar identidad de Git
+        run: |
+          git config --global user.name "Workspace Agent"
+          git config --global user.email "automation@github.com"
+
+      - name: Ejecutar analizador y modificar commit (si aplica)
         run: |
           python .github/scripts/analizador.py
+          
+          # Si deseas que el script modifique automáticamente el último commit en base al análisis:
+          # (Asegúrate de que tu analizador guarde el commit sugerido en un archivo temporal o haz el amend aquí)
+          # git add .
+          # git commit --amend --no-edit
+          # git push origin HEAD:${{ github.ref_name }} --force
 
-      - name: Subir artefacto para GitHub Pages
+      - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'public'
+          path: './public'
 
-      - name: Desplegar en GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
         
