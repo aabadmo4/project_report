@@ -64,14 +64,17 @@ def analizar_y_generar_conventional_commit(archivo, diff_texto):
     archivo_lower = archivo.lower()
     diff_lower = diff_texto.lower()
     
-    if 'style' in diff_lower or 'css' in diff_lower or 'color' in diff_lower:
+    # Análisis contextual inteligente y preciso
+    if 'analizador.py' in archivo_lower and ('amend' in diff_lower or 'commit' in diff_lower or 'push' in diff_lower):
+        tipo, alcance, desc = "feat", "report", "implement automatic commit amendment feature"
+    elif 'analizador.py' in archivo_lower:
+        tipo, alcance, desc = "refactor", "report", "refactor script analytics and HTML layout generation"
+    elif 'workflow' in archivo_lower or '.github/workflows' in archivo_lower:
+        tipo, alcance, desc = "ci", "actions", "update CI/CD pipeline workflow configuration"
+    elif 'template.html' in archivo_lower or 'style' in diff_lower or 'css' in diff_lower:
         tipo, alcance, desc = "style", "ui", "update styling and layout design"
     elif 'fix' in diff_lower or 'error' in diff_lower or 'bug' in diff_lower:
         tipo, alcance, desc = "fix", "core", "resolve minor bug or syntax issue"
-    elif 'workflow' in diff_lower or 'actions' in archivo_lower:
-        tipo, alcance, desc = "ci", "actions", "update CI/CD pipeline workflow configuration"
-    elif 'analizador.py' in archivo_lower or 'html' in archivo_lower:
-        tipo, alcance, desc = "refactor", "report", "refactor script analytics and HTML layout generation"
     else:
         tipo, alcance, desc = "feat", "app", "update codebase features and components"
 
@@ -119,7 +122,6 @@ def colorear_sintaxis_codely(linea):
 
 def aplicar_git_amend_automatico(commit_titulo, commit_cuerpo):
     try:
-        # Verificar si ya tiene el formato conventional para evitar bucles infinitos de amend
         resultado_log = subprocess.run(['git', 'log', '-1', '--pretty=format:%s'], capture_output=True, text=True, check=True)
         ultimo_mensaje = resultado_log.stdout.strip()
         
@@ -129,13 +131,9 @@ def aplicar_git_amend_automatico(commit_titulo, commit_cuerpo):
 
         mensaje_completo = f"{commit_titulo}\n\n{commit_cuerpo}"
         
-        # Añadir el index.html generado recientemente al commit
         subprocess.run(['git', 'add', 'index.html'], check=True)
-        
-        # Modificar el commit actual
         subprocess.run(['git', 'commit', '--amend', '-m', mensaje_completo], check=True)
         
-        # Forzar la actualización en el servidor remoto de GitHub
         branch = os.getenv('GITHUB_REF_NAME', 'main')
         subprocess.run(['git', 'push', 'origin', f'HEAD:{branch}', '--force'], check=True)
         print("¡Commit modificado en el servidor remoto con éxito!")
@@ -223,7 +221,6 @@ def generar_html(event_data):
         f.write(html_content)
     print(f"¡Dashboard generado con éxito en: {index_path}!")
 
-    # Ejecutar la modificación automática del commit en el servidor remoto
     aplicar_git_amend_automatico(commit_sugerido, cuerpo_generado)
 
 if __name__ == '__main__':
